@@ -16,7 +16,7 @@ export function createProtocol(broker) {
           result = {
             protocolVersion: versions.includes(request.params?.protocolVersion) ? request.params.protocolVersion : versions.at(-1),
             capabilities: { tools: {} },
-            serverInfo: { name: 'construction-drawing-readonly', version: '0.5.0' },
+            serverInfo: { name: 'construction-drawing-readonly', version: '0.6.0' },
             instructions: workflowInstructions
           };
           break;

@@ -1,5 +1,6 @@
 import { pageRole } from './pages.js';
 import { readDrawingPage } from './read-page.js';
+import { collectPages, browserProfileScope } from './page-check.js';
 
 const hostName = 'com.kujiale.construction_drawing';
 const alarmName = 'drawingMcp';
@@ -110,7 +111,10 @@ export async function pollBridge() {
     await chrome.alarms.create(alarmName, { periodInMinutes: 0.5 });
     while (current === generation) {
       if ((await chrome.storage.local.get('bridgeEnabled')).bridgeEnabled === false) return;
-      const { task } = await post('/poll', { clientId, instanceId });
+      const pageStatus = await collectPages();
+      if (current !== generation) return;
+      const report = { browser: browserProfileScope().browser, extensionVersion: chrome.runtime.getManifest().version, pages: pageStatus.pages };
+      const { task } = await post('/poll', { clientId, instanceId, report });
       await chrome.storage.session.set({ bridgeStatus: { connected: true, checkedAt: Date.now() } });
       if (task) {
         let value, error;

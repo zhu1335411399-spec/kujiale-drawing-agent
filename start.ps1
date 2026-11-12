@@ -22,7 +22,7 @@ $template = $template.Replace('{{REGISTRATION}}', $(if ($PrepareOnly) { 'Not reg
 [System.IO.File]::WriteAllText((Join-Path $destination 'welcome.html'), $template, $utf8)
 Write-Host 'PASS local service and MCP tools. The browser extension and AI client are checked separately.'
 if (!$NoOpen) {
-  Start-Process -FilePath (Join-Path $destination 'welcome.html')
-  Start-Process -FilePath explorer.exe -ArgumentList ('"' + $destination + '"')
+  Start-Process -FilePath (Join-Path $destination 'DrawingBridgeManager.exe')
+
 }
 

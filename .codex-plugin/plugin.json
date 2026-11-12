@@ -1,6 +1,6 @@
 {
   "name": "construction-drawing-bridge",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "施工图配置与前端页面连接、基础配置及线样式只读查询",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"

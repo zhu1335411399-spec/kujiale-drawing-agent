@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 export const maxBytes = 262144;
 const user = createHash('sha256').update(os.homedir()).digest('hex').slice(0, 20);
-export const endpoint = process.platform === 'win32' ? '\\\\.\\pipe\\kujiale-drawing-v50-' + user : os.tmpdir() + '/drawing-v50-' + user + '.sock';
+export const endpoint = process.platform === 'win32' ? '\\\\.\\pipe\\kujiale-drawing-v60-' + user : os.tmpdir() + '/drawing-v60-' + user + '.sock';
 
 export function readLines(stream, consume) {
   let buffer = Buffer.alloc(0);

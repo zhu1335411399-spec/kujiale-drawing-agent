@@ -84,7 +84,7 @@ test('popup invalidates old display on close and ignores a late successful respo
   const events = {};
   const event = name => ({ addListener(fn) { events[name] = fn; } });
   let resolveOld, callbacks = [], interval;
-  const responses = [new Promise(resolve => { resolveOld = resolve; }), Promise.resolve({ detectorProtocol: 2, pages: [], checkedAt: Date.now(), browser: 'Edge' })];
+  const responses = [new Promise(resolve => { resolveOld = resolve; }), Promise.resolve({ detectorProtocol: 3, pages: [], checkedAt: Date.now(), browser: 'Edge' })];
   const context = {
     document: { getElementById(id) { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); }, createElement: element },
     chrome: { runtime: { sendMessage: () => responses.shift() }, tabs: { onRemoved: event('removed'), onCreated: event('created'), onReplaced: event('replaced'), onUpdated: event('updated') }, windows: { onRemoved: event('windowRemoved') } },
@@ -97,7 +97,7 @@ test('popup invalidates old display on close and ignores a late successful respo
   assert.match(elements.get('design').children[0].textContent, /重新检测/);
   callbacks.shift()();
   await Promise.resolve(); await Promise.resolve();
-  resolveOld({ detectorProtocol: 2, pages: [{ ...design, role: 'design', tabId: 2, connected: true }], checkedAt: Date.now(), browser: 'Edge' });
+  resolveOld({ detectorProtocol: 3, pages: [{ ...design, role: 'design', tabId: 2, connected: true }], checkedAt: Date.now(), browser: 'Edge' });
   await Promise.resolve(); await Promise.resolve();
   assert.match(elements.get('design').children[0].textContent, /未检测到/);
   assert.equal(typeof interval, 'function');

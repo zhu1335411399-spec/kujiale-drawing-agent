@@ -16,7 +16,7 @@ const agent = await connect(address), browser = await connect(address), browser2
 const rpc = (name, args = {}) => agent.call('/mcp', { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } });
 try {
   const initialized = await agent.call('/mcp', { jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-03-26' } });
-  assert.equal(initialized.result.serverInfo.version, '0.5.0');
+  assert.equal(initialized.result.serverInfo.version, '0.6.0');
   const tools = (await agent.call('/mcp', { jsonrpc: '2.0', id: 2, method: 'tools/list' })).result.tools;
   assert.equal(tools.length, 5);
   assert.ok(tools.slice(0, 3).every(tool => tool.annotations.readOnlyHint));
@@ -114,7 +114,7 @@ try {
   assert.equal((await nativeCall('/poll', { clientId, instanceId })).task, null);
   await assert.rejects(nativeCall('/mcp', {}), /Unsupported/);
   shared = await ensureDaemon();
-  assert.equal((await shared.call('/health')).version, '0.5.0');
+  assert.equal((await shared.call('/health')).version, '0.6.0');
   const context = shared.call('/mcp', { jsonrpc: '2.0', id: 10, method: 'tools/call', params: { name: 'drawing_get_context', arguments: {} } });
   const { task } = await nativeCall('/poll', { clientId, instanceId });
   assert.equal(task.operation, 'context');

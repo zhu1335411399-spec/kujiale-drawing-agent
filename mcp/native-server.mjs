@@ -4,11 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Broker } from './broker.mjs';
 import { createProtocol } from './protocol.mjs';
+import { ConnectionMonitor } from './monitor.mjs';
 import { endpoint, ensureDaemon, readLines, maxBytes } from './ipc.mjs';
 
 export async function startBridge({ address = endpoint, timeoutMs = 35000, idleMs = 60000 } = {}) {
   const broker = new Broker(timeoutMs);
   const dispatch = createProtocol(broker);
+  const monitor = new ConnectionMonitor();
   const sockets = new Set();
   const owners = new Map();
   const server = net.createServer(socket => {
@@ -20,6 +22,7 @@ export async function startBridge({ address = endpoint, timeoutMs = 35000, idleM
       for (const clientId of identities) {
         if (owners.get(clientId) !== socket) continue;
         owners.delete(clientId);
+        monitor.remove(clientId);
         for (const task of [...broker.pending.values()]) if (task.clientId === clientId) task.reject(new Error('Browser disconnected'));
         broker.clients.delete(clientId);
       }
@@ -29,12 +32,15 @@ export async function startBridge({ address = endpoint, timeoutMs = 35000, idleM
       try {
         const input = message.input || {};
         switch (message.route) {
-          case '/health': value = { service: 'construction-drawing-readonly', version: '0.5.0' }; break;
+          case '/health': value = { service: 'construction-drawing-readonly', version: '0.6.0' }; break;
+          case '/manager/status': value = { ...monitor.snapshot(), version: '0.6.0', unreportedClients: [...broker.clients.keys()].filter(id => !monitor.reports.has(id)).length }; break;
           case '/hello':
           case '/poll':
+            if (broker.clients.get(input.clientId)?.instanceId !== input.instanceId) monitor.remove(input.clientId);
             broker.register(input.clientId, input.instanceId);
             owners.set(input.clientId, socket);
             identities.add(input.clientId);
+            if (input.report) monitor.report(input.clientId, input.instanceId, input.report);
             value = message.route === '/poll' ? { task: broker.poll(input.clientId, input.instanceId) } : { ok: true };
             break;
           case '/result':
@@ -42,7 +48,9 @@ export async function startBridge({ address = endpoint, timeoutMs = 35000, idleM
             broker.complete(input.clientId, input.id, input.value, input.error);
             value = { ok: true };
             break;
-          case '/mcp': value = await dispatch(input); break;
+          case '/mcp':
+            if (input.method === 'tools/call') monitor.toolCalled(input.params?.name || 'unknown');
+            value = await dispatch(input); break;
           default: throw new Error('Unknown local operation');
         }
       } catch (failure) { error = failure.message; }

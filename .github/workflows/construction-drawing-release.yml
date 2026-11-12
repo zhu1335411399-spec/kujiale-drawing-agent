@@ -1,6 +1,17 @@
 name: Construction drawing Windows preview
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'desktop/**'
+      - 'mcp/**'
+      - 'browser-extension/**'
+      - 'install.ps1'
+      - 'start.ps1'
+      - 'build.ps1'
+      - '.codex-plugin/plugin.json'
+      - '.github/workflows/construction-drawing-release.yml'
 permissions:
   contents: write
 concurrency:
@@ -22,7 +33,7 @@ jobs:
       - name: Protocol and native host tests
         run: node mcp/native-test.mjs
       - name: Page connection status regression
-        run: node --test mcp/page-status.test.mjs
+        run: node --test mcp/page-status.test.mjs mcp/monitor.test.mjs
       - name: Build complete portable package
         run: |
           $source = Join-Path $env:GITHUB_WORKSPACE '.'
@@ -48,6 +59,22 @@ jobs:
           if (!(Test-Path -LiteralPath (Join-Path $relocated '.codex/config.toml'))) { throw 'MCP project config missing' }
           $sum = (Get-FileHash -LiteralPath $archive.FullName).Hash.ToLowerInvariant() + '  ' + $archive.Name
           Set-Content -LiteralPath ($archive.FullName + '.sha256') -Value $sum -Encoding utf8
+      - name: Verify native registration and compiled manager
+        run: |
+          $source = Join-Path $env:GITHUB_WORKSPACE '.'
+          $target = Join-Path $env:RUNNER_TEMP 'Drawing manager registration test'
+          & (Join-Path $source 'install.ps1') -InstallDirectory $target
+          $expected = Join-Path $target 'native-host.json'
+          foreach ($browser in @('Google\Chrome','Microsoft\Edge')) {
+            $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey(('Software\' + $browser + '\NativeMessagingHosts\com.kujiale.construction_drawing'))
+            if (!$key) { throw 'Native host registration missing' }
+            try { if ($key.GetValue('') -ne $expected) { throw 'Native host registration path mismatch' } } finally { $key.Dispose() }
+          }
+          $test = Start-Process -FilePath (Join-Path $target 'DrawingBridgeManager.exe') -ArgumentList '--self-test' -WindowStyle Hidden -Wait -PassThru
+          if ($test.ExitCode -ne 0) { throw 'Desktop manager self-test failed' }
+          & (Join-Path $target 'runtime/node.exe') (Join-Path $target 'mcp/manager-watch.mjs') --once
+          if ($LASTEXITCODE -ne 0) { throw 'Unified status query failed' }
+          & (Join-Path $target 'install.ps1') -InstallDirectory $target
       - name: Retain build artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -17,7 +17,7 @@ foreach ($legacy in @('browser-extension\bridge.js', 'mcp\server.mjs', 'mcp\smok
   $legacyPath = Join-Path $destination $legacy
   if (Test-Path -LiteralPath $legacyPath) { Remove-Item -LiteralPath $legacyPath -Force }
 }
-foreach ($folder in @('browser-extension', 'mcp', 'skills', '.codex-plugin')) {
+foreach ($folder in @('browser-extension', 'mcp', 'skills', '.codex-plugin', 'desktop')) {
   if ($inPlace) { continue }
   $target = Join-Path $destination $folder
   New-Item -ItemType Directory -Path $target -Force | Out-Null
@@ -39,13 +39,14 @@ Get-ChildItem -LiteralPath (Split-Path $nodeExecutable) -Filter '*.dll' | ForEac
     Copy-Item -LiteralPath $_.FullName -Destination $dllTarget -Force
   }
 }
-foreach ($file in @('install.ps1', 'install.cmd', 'Start.cmd', 'start.ps1', 'welcome-template.html', 'README.md', 'QUICKSTART.md', 'RELEASE-NOTES.md', 'uninstall.ps1', 'CONFIGURATION-WORKFLOW.md')) {
+foreach ($file in @('install.ps1', 'install.cmd', 'Start.cmd', 'start.ps1', 'Manager.cmd', 'welcome-template.html', 'README.md', 'QUICKSTART.md', 'RELEASE-NOTES.md', 'uninstall.ps1', 'CONFIGURATION-WORKFLOW.md')) {
   if ($inPlace) { continue }
   Copy-Item -LiteralPath (Join-Path $source $file) -Destination $destination -Force
 }
 if (!$inPlace -and (Test-Path -LiteralPath (Join-Path $source 'runtime\LICENSE'))) {
   Copy-Item -LiteralPath (Join-Path $source 'runtime\LICENSE') -Destination (Join-Path $runtime 'LICENSE') -Force
 }
+& (Join-Path $destination 'desktop\build.ps1') -TargetDirectory $destination
 $manifest = Get-Content -Raw -Encoding UTF8 (Join-Path $destination 'browser-extension\manifest.json') | ConvertFrom-Json
 $sha = [System.Security.Cryptography.SHA256]::Create()
 try { $hash = $sha.ComputeHash([Convert]::FromBase64String($manifest.key)) } finally { $sha.Dispose() }
