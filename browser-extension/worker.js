@@ -9,7 +9,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
     return true;
   }
   if (message.type !== 'check') return;
-  collectPages().then(result => reply({ ...result, ...browserProfileScope() }), error => reply({ error: error.message }));
+  collectPages().then(result => reply({ ...result, ...browserProfileScope(), detectorProtocol: 2 }), error => reply({ error: error.message }));
   return true;
 });
 

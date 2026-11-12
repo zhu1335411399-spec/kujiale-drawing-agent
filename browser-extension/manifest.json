@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "施工图管理桥接",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "只读连接施工图配置与设计页，供 Agent 查询配置名称、状态及线样式。",
   "permissions": [
     "scripting",

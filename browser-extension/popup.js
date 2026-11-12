@@ -40,6 +40,7 @@ async function check() {
   try {
     const result = await chrome.runtime.sendMessage({ type: 'check' });
     if (request !== sequence) return;
+    if (result?.detectorProtocol !== 2) throw new Error('扩展后台仍是旧版，请在扩展管理页点击重新加载（↻）');
     if (result?.error || !Array.isArray(result?.pages)) throw new Error(result?.error || '扩展未响应，请重新加载');
     render('config', result.pages);
     render('design', result.pages);
