@@ -54,7 +54,7 @@ jobs:
             ${{ runner.temp }}/drawing-release/*.zip
             ${{ runner.temp }}/drawing-release/*.sha256
           retention-days: 14
-      - name: Publish private preview release
+      - name: Publish preview release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
