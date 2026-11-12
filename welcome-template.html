@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>施工图配置助手 · 启动检查</title>
+<style>body{max-width:860px;margin:48px auto;padding:0 24px;font:16px/1.8 system-ui;color:#26334b;background:#f5f7fb}section{background:white;padding:24px;border-radius:14px;margin:18px 0}h1{font-size:28px}h2{font-size:20px}code{overflow-wrap:anywhere;background:#edf1f7;padding:3px 6px}strong{color:#2251a6}.ok{color:#087647}</style>
+<h1>施工图配置助手 {{VERSION}}</h1>
+<section><h2 class="ok">本机服务与 MCP 自检通过</h2><p>{{REGISTRATION}}</p><p>安装位置：<code>{{DIRECTORY}}</code></p><p>自检不代表浏览器已连接，也不代表 AI 客户端已经完成实际调用。</p></section>
+<section><h2>首次使用，完成以下两步</h2><ol>
+<li>在 Chrome 地址栏打开 <code>chrome://extensions</code>（Edge 使用 <code>edge://extensions</code>），开启开发者模式，加载已解压扩展：<p><code>{{EXTENSION}}</code></p>浏览器中的安装确认需由你完成。后端与前端使用两个独立用户配置时，各自加载同一扩展。</li>
+<li>在已有的 Codex／Claude 等 AI 客户端打开本安装目录作为项目，信任该项目后加载 Skill 和 MCP。目录内已生成 <code>.codex/config.toml</code>、<code>.mcp.json</code> 及两份 Skill；其他 MCP 客户端可导入 <code>mcp-client.json</code>。AI 客户端及其登录账号由使用者准备。</li>
+</ol><p>登录自己的酷家乐账号并打开配置页与设计页，让 AI 调用 <code>drawing_get_context</code> 检查双端实际连接。</p></section>
+<section><h2>当前可用范围</h2><p>支持双端页面上下文、配置信息及当前页线样式读取。保存、发布工具已注册，执行适配器尚未验证，当前返回未执行；前端更新配置、自动标注、另存为和出图流程已整理，尚未自动接通。</p><p>你的业务流程：后台修改并保存 → 设计端“图纸&amp;清单 → 设置 → 更新配置” → 涉及自动标注时“编辑视图 → 自动标注” → 验收。发布只在你明确要求时单独触发。</p></section>
+<p>以后双击 Start.cmd 即可启动并检查。完整包自带 Node 运行时，无需另外安装 Node、修改源码或复制配对码。</p></html>
+

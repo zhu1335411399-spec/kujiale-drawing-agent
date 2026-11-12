@@ -1,0 +1,116 @@
+{
+  "status": "contract-only-source-import-pending",
+  "tools": [
+    {
+      "name": "drawing_get_context",
+      "readOnly": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "drawing_read_config",
+      "readOnly": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "drawing_list_line_styles",
+      "readOnly": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 10
+          }
+        },
+        "required": [
+          "pageId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "drawing_save_config",
+      "readOnly": false,
+      "executionStatus": "adapter-not-verified",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "expectedConfigName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "pageId",
+          "expectedConfigName"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "drawing_publish_config",
+      "readOnly": false,
+      "executionStatus": "adapter-not-verified",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "expectedConfigName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "pageId",
+          "expectedConfigName"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
+

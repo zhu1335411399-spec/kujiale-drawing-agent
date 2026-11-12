@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>施工图页面连接</title>
+<style>
+  body { width: 380px; margin: 20px; font: 14px system-ui, sans-serif; color: #243047; }
+  h2 { font-size: 19px; margin: 0 0 16px; }
+  section { border: 1px solid #dce2eb; border-radius: 10px; padding: 13px; margin-bottom: 12px; }
+  h3 { margin: 0 0 8px; font-size: 15px; }
+  p { line-height: 1.6; margin: 6px 0; }
+  .ok { color: #087647; }
+  .pending { color: #946008; }
+  .detail { color: #657084; font-size: 12px; overflow-wrap: anywhere; }
+  button { background: #2159da; color: white; border: 0; border-radius: 7px; padding: 9px 16px; cursor: pointer; }
+  button:disabled { opacity: .55; }
+</style>
+<h2>施工图页面连接</h2>
+<section><h3>后端配置网页</h3><div id="config"></div></section>
+<section><h3>前端设计网页</h3><div id="design"></div></section>
+<p id="status" role="status">正在检测…</p>
+<button id="refresh">重新检测连接</button>
+<p class="detail">检测当前 Chrome 用户配置中已打开页面的访问情况。账号身份、配置生效和 MCP 服务连接需分别验证。</p>
+<section><h3>Agent 自动连接</h3><p id="mcpStatus" role="status"></p><button id="connect">重新连接</button> <button id="disconnect">暂停</button><p id="mcpDetail" class="detail"></p></section>
+<script type="module" src="popup.js"></script>
+<script type="module" src="native-status.js"></script>
+</html>
+

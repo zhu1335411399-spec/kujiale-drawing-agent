@@ -1,0 +1,12 @@
+node_modules/
+.runtime/
+dist/
+runtime/*
+!runtime/LICENSE
+*.exe
+*.dll
+*.zip
+*.log
+**/connection.json
+**/token
+
