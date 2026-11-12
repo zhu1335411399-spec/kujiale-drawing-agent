@@ -16,7 +16,7 @@ static class Data {
  public static Dictionary<string,object> Parse(string s){return new JavaScriptSerializer{MaxJsonLength=1048576}.Deserialize<Dictionary<string,object>>(s);}
  public static Dictionary<string,object> Obj(object v){return v as Dictionary<string,object>??new Dictionary<string,object>();}
  public static string Text(Dictionary<string,object>d,string k){object v;return d.TryGetValue(k,out v)&&v!=null?Convert.ToString(v):"";}
- public static object[] Arr(Dictionary<string,object>d,string k){object v;return d.TryGetValue(k,out v)?v as object[]??new object[0]:new object[0];}
+ public static object[] Arr(Dictionary<string,object>d,string k){object v;if(!d.TryGetValue(k,out v))return new object[0];var a=v as object[];if(a!=null)return a;var list=v as System.Collections.ArrayList;return list!=null?list.ToArray():new object[0];}
  public static bool Yes(Dictionary<string,object>d,string k){object v;return d.TryGetValue(k,out v)&&v is bool&&(bool)v;}
 }
 static class Registration {
