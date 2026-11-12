@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "施工图管理桥接",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "只读连接施工图配置与设计页，供 Agent 查询配置名称、状态及线样式。",
   "permissions": [
     "scripting",
@@ -25,4 +25,3 @@
   "minimum_chrome_version": "120",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAue6TLxtqJzerxxKVhozaJCVlokYdSJyKeG4MDFkWwIoVa8qmBKhcVZMpvD8yYO+ubRPSTLc2WiRzWEMdKYV5nkuHzOZ7Kh3rw5Ygc5fbzmxw+tnI+Sc0QjIvQcmx9xa4wRPXp5Ez+GsgIb3vEBzITEu7V00pVgm10t4UUXN1VyJa506f2HTXSxoDXq7vgBUfhIhA3SWmJPMNl1KGWVf/S13bOSFVj+FXylG56BrwRKNMkPtK0/0ac1DdZwFaGrzS7I2pdZwdXcgBQ9YXLJnKvwd9vgX6rENSYIhVgJRnqVE41lTZ5cudZW++NTdoTxhXNJnhDiF/vYxuh2B029k2owIDAQAB"
 }
-

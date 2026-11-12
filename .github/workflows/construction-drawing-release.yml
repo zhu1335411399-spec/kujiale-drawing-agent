@@ -21,6 +21,8 @@ jobs:
           architecture: x64
       - name: Protocol and native host tests
         run: node mcp/native-test.mjs
+      - name: Page connection status regression
+        run: node --test mcp/page-status.test.mjs
       - name: Build complete portable package
         run: |
           $source = Join-Path $env:GITHUB_WORKSPACE '.'

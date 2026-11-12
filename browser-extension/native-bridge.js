@@ -47,6 +47,8 @@ async function readTab(tabId, kind, options = {}) {
     target: { tabId }, func: readDrawingPage,
     args: [{ kind, name: options.name, offset: options.offset, limit: options.limit }]
   });
+  const current = await chrome.tabs.get(tabId);
+  if (current.url !== tab.url || pageRole(current.url) !== role) throw new Error('页面已关闭或跳转，请重新读取上下文');
   if (!probe?.result || pageRole(probe.result.url) !== role) throw new Error('页面读取失败或已跳转');
   return { tabId, ...probe.result };
 }
@@ -54,10 +56,16 @@ async function readTab(tabId, kind, options = {}) {
 async function perform(task) {
   if (task.operation === 'context') {
     const tabs = (await chrome.tabs.query({ url: sites })).filter(tab => pageRole(tab.url));
-    return Promise.all(tabs.map(async tab => {
+    const pages = await Promise.all(tabs.map(async tab => {
       try { return await readTab(tab.id, 'context'); }
       catch (error) { return { tabId: tab.id, role: pageRole(tab.url), error: error.message }; }
     }));
+    const live = new Map((await chrome.tabs.query({ url: sites })).map(tab => [tab.id, tab]));
+    return pages.filter(page => {
+      const current = live.get(page.tabId);
+      const initial = tabs.find(tab => tab.id === page.tabId);
+      return current && current.url === initial.url && pageRole(current.url) === page.role;
+    });
   }
   if (task.operation === 'config' || task.operation === 'styles') return readTab(task.args.tabId, task.operation, task.args);
   throw new Error('Unsupported readonly operation');
