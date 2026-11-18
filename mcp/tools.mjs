@@ -4,7 +4,7 @@ const writeTarget = {
 };
 
 export const tools = [
-  {name:'drawing_read_frontend_identity',description:'只读检查指定浏览器设计页右上角头像。先 inspect 返回实际头像候选，再用返回的 avatarKey 执行 hover，读取头像 title 或悬停提示。expectedBrowser 必须与实际浏览器匹配。仅核对企业显示名称，不读取真实账号ID，不核验模板或配置已生效。不点击、切换账号、保存、发布；未知或多个名称保持未确认。',
+  {name:'drawing_read_frontend_identity',description:'只读检查指定浏览器设计页右上角头像。先 inspect 返回实际头像候选，再用返回的 avatarKey 执行 hover，读取头像标题、提示或账号菜单中的名称及可见账号ID。expectedBrowser 必须与实际浏览器匹配。账号ID没有证据时为null，不从名称推断后台客户ID，不核验企业归属、模板或配置已生效。不点击、切换账号、保存、发布；未知或多个名称保持未确认。',
     annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true},
     inputSchema:{type:'object',additionalProperties:false,properties:{pageId:{type:'string',minLength:1,maxLength:120},action:{type:'string',enum:['inspect','hover'],maxLength:10},expectedBrowser:{type:'string',enum:['Chrome','Edge'],maxLength:10},expectedCompanyName:{type:'string',minLength:1,maxLength:200},frameId:{type:'integer',minimum:0,maximum:2147483647,description:'inspect 返回的目标头像所在 frameId，默认主页面0'},avatarKey:{type:'string',minLength:1,maxLength:5000}},required:['pageId','action','expectedBrowser','expectedCompanyName']}},
   {name:'drawing_load_customer_config',description:'通用载入客户施工图配置。customerName 可为当前登录账号有权访问的任意主账号显示名称；同名时用 inspect 返回的 customerLabel 完整标签区分。先用 drawing_get_context 获取 pageId 和 configStatusText 作为 expectedStatus。inspect 只检查候选项，load 选择唯一匹配账号并点击载入，再回读来源标签和侧边模板；不切换登录账号，不强制指定模板，不保存或发布。已记录但未确认保存的草稿会阻止切换；不能据此检测所有手动未保存修改。loaded 仅表示来源显示标签核验，identityVerified=false；结果不确定时禁止自动重试。',

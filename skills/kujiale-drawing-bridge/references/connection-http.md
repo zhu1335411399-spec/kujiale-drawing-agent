@@ -29,3 +29,7 @@ Streamable HTTP/SSE 兼容测试。浏览器端默认只接受项目固定扩展
 - Unsupported readonly operation：浏览器扩展代码仍旧，需重新加载扩展，而非只点击重新连接。
 - Line-style table not found：检查是否位于“注释样式”或“通用设置”子标签。
 - 连接失败：先查端口、本机服务及扩展状态，不重装、不放宽权限、不启动未知副本。
+
+## 扩展日常面板
+
+当前面板保留连接、页面选择、账号及可见 ID 读取；原始接口、编码配置和采集探测按钮已移出日常入口。研究用 MCP 诊断能力保留。页面账号 ID 与浏览器会话、MCP 页面、标签页 ID 分开显示，未知字段不猜测。详见 [精简面板](https://github.com/zhu1335411399-spec/kujiale-drawing-agent/blob/main/docs/extension-panel.md)。

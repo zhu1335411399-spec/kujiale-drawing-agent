@@ -4,8 +4,8 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
   const clean=s=>(s||'').trim().replace(/\s+/g,' ');
   const visible=n=>!!n?.getClientRects().length&&getComputedStyle(n).visibility!=='hidden';
   const browser=navigator.userAgent.includes('Edg/')?'Edge':navigator.userAgent.includes('Chrome/')?'Chrome':'unknown';
-  const result={readerBuild:'frontend-identity-3',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
-    status:'identity-unconfirmed',companyDisplayName:null,displayNameMatch:null,identityVerified:false,saved:false,published:false,evidence:[]};
+  const result={readerBuild:'frontend-identity-4',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
+    status:'identity-unconfirmed',companyDisplayName:null,visibleAccountId:null,displayNameMatch:null,identityVerified:false,saved:false,published:false,evidence:[]};
   const generic=new Set(['头像','用户头像','账号','账户','个人中心','用户中心','avatar','profile','account']);
   const usable=s=>!!clean(s)&&clean(s).length<=200&&!generic.has(clean(s).toLowerCase())&&!/https?:\/\//i.test(s);
   const rect=n=>{const r=n.getBoundingClientRect();return{x:Math.round(r.x),y:Math.round(r.y),width:Math.round(r.width),height:Math.round(r.height)};};
@@ -27,7 +27,7 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
       location.protocol!=='https:'||location.port)throw Error('Not a supported design origin');
     if(!['inspect','hover'].includes(options.action))throw Error('Invalid identity-read action');
     if(browser!==options.expectedBrowser)throw Error('Connected browser family does not match the selected browser');
-    if(!options.expectedCompanyName?.trim()||options.expectedCompanyName.length>200)throw Error('Expected company display name required');
+    if(options.expectedCompanyName!==undefined&&(!options.expectedCompanyName?.trim()||options.expectedCompanyName.length>200))throw Error('Invalid expected company display name');
     const nodes=candidateNodes();
     result.avatarCandidates=nodes.map(n=>({avatarKey:key(n),tag:n.tagName,id:n.id||null,classes:n.getAttribute('class')||'',title:n.getAttribute('title'),ariaLabel:n.getAttribute('aria-label'),alt:n.getAttribute('alt'),bounds:rect(n)})).slice(0,30);
     if(options.action==='inspect')return{...result,status:'identity-inspected',candidateCount:nodes.length};
@@ -55,11 +55,19 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
       const described=new Set();let owner=avatar;
       for(let i=0;owner&&i<3;i++,owner=owner.parentElement)for(const id of (owner.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean))described.add(id);
       const a=avatar.getBoundingClientRect();
+      const accountIds=[];
       // Observed on the real design toolbar: the account name is in a custom menu, not a tooltip.
       for(const n of [...document.querySelectorAll('[class*="TopBar-account-name_"]')].filter(visible)){
         const t=text(n),r=n.getBoundingClientRect();
         const nearby=r.x+r.width>=a.x-200&&r.x<=a.x+a.width+160&&r.y>=0&&r.y<=a.y+a.height+180;
-        if(usable(t)&&nearby)result.evidence.push({source:'avatar-account-menu',text:t,selector:'[class*="TopBar-account-name_"]',bounds:rect(n)});
+        if(usable(t)&&nearby){
+          result.evidence.push({source:'avatar-account-menu',text:t,selector:'[class*="TopBar-account-name_"]',bounds:rect(n)});
+          const root=n.parentElement?.parentElement;
+          for(const idNode of [...(root?.querySelectorAll('[class*="TopBar-account-id_"]')||[])].filter(visible)){
+            const raw=text(idNode),match=/^ID\s*[:：]\s*([A-Za-z0-9_-]{1,100})$/i.exec(raw),ir=idNode.getBoundingClientRect();
+            if(match&&Math.abs(ir.x-r.x)<=50&&ir.y>=r.y&&ir.y<=r.y+r.height+60)accountIds.push({id:match[1],source:'avatar-account-menu-id',text:raw,selector:'[class*="TopBar-account-id_"]',bounds:rect(idNode)});
+          }
+        }
       }
       for(const n of tooltipNodes()){
         const t=text(n),r=n.getBoundingClientRect();
@@ -69,7 +77,13 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
       const names=[...new Set(result.evidence.map(e=>e.text))];result.displayNameCandidates=names;
       const expected=clean(options.expectedCompanyName);
       // Names are not searched in the rest of the page; only evidence attached to the chosen avatar counts.
-      if(names.length===1){result.companyDisplayName=names[0];result.displayNameMatch=names[0]===expected;result.status=result.displayNameMatch?'display-name-match':'display-name-mismatch';}
+      if(names.length===1){
+        result.companyDisplayName=names[0];
+        const ids=[...new Set(accountIds.map(e=>e.id))];
+        if(ids.length===1){result.visibleAccountId=ids[0];result.accountIdEvidence=accountIds.find(e=>e.id===ids[0]);}
+        if(options.expectedCompanyName===undefined)result.status='identity-read';
+        else {result.displayNameMatch=names[0]===expected;result.status=result.displayNameMatch?'display-name-match':'display-name-mismatch';}
+      }
       return result;
     }finally{
       for(const type of ['pointerout','mouseout','mouseleave'])if(avatar.isConnected)avatar.dispatchEvent(new MouseEvent(type,{bubbles:type!=='mouseleave',cancelable:true,view:window}));

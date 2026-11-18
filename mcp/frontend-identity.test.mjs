@@ -7,7 +7,7 @@ import {createProtocol} from './protocol.mjs';
 import {Broker} from './broker.mjs';
 
 const script=readFileSync(new URL('../browser-extension/frontend-identity-page.js',import.meta.url),'utf8');
-function fixture({title='示例企业',tooltip=null,accountMenu=null,family='Edge',outsideName=null,ambiguous=false}={}){
+function fixture({title='示例企业',tooltip=null,accountMenu=null,accountId=null,family='Edge',outsideName=null,ambiguous=false}={}){
   const events=[];
   const body={children:[],getAttribute:()=>null,parentElement:null};
   const make=(attrs={},tag='IMG')=>({tagName:tag,id:'',attrs,parentElement:body,children:[],isConnected:true,
@@ -19,6 +19,9 @@ function fixture({title='示例企业',tooltip=null,accountMenu=null,family='Edg
   let tipVisible=false;
   const tip=Object.assign(make({},'DIV'),{innerText:tooltip,getClientRects:()=>tipVisible?[{}]:[],getBoundingClientRect:()=>({x:850,y:60,width:140,height:40})});
   const menuName=Object.assign(make({class:'TopBar-account-name_example'},'DIV'),{innerText:accountMenu,getClientRects:()=>tipVisible?[{}]:[],getBoundingClientRect:()=>({x:850,y:63,width:134,height:22})});
+  const accountRoot=make({},'DIV'),nameWrapper=make({},'DIV');nameWrapper.parentElement=accountRoot;menuName.parentElement=nameWrapper;
+  const idNode=Object.assign(make({class:'TopBar-account-id_example'},'DIV'),{innerText:accountId?'ID:'+accountId:'',getClientRects:()=>tipVisible?[{}]:[],getBoundingClientRect:()=>({x:850,y:88,width:96,height:14})});
+  accountRoot.querySelectorAll=()=>accountId?[idNode]:[];
   const second=make({class:'second-avatar',title:'其他企业'});if(ambiguous)body.children.push(second);
   const document={body,querySelectorAll:s=>s.startsWith('img,')?(ambiguous?[avatar,second]:[avatar]):s.includes('tooltip')?[tip]:s.includes('TopBar-account-name_')?[menuName]:[],title:'design'};
   const box={document,navigator:{userAgent:family==='Edge'?'Chrome/120 Edg/120':'Chrome/120'},innerWidth:1000,window:{},
@@ -48,6 +51,11 @@ test('unrelated page text does not establish company identity',async()=>{
 test('custom toolbar account menu supplies the name without requiring a tooltip role',async()=>{
   const f=fixture({title:null,accountMenu:'示例企业'});const p=await f.run({action:'inspect'});const r=await f.run({action:'hover',avatarKey:p.avatarCandidates[0].avatarKey});
   assert.equal(r.status,'display-name-match');assert.equal(r.evidence[0].source,'avatar-account-menu');
+});
+test('visible account ID is read beside the account name and UI-only read does not fabricate a comparison',async()=>{
+  const f=fixture({title:null,accountMenu:'示例企业',accountId:'EXAMPLE_ACCOUNT_123'});const p=await f.run({action:'inspect'});const r=await f.run({action:'hover',avatarKey:p.avatarCandidates[0].avatarKey,expectedCompanyName:undefined});
+  assert.equal(r.status,'identity-read');assert.equal(r.visibleAccountId,'EXAMPLE_ACCOUNT_123');assert.equal(r.displayNameMatch,null);assert.equal(r.identityVerified,false);
+  const missing=fixture({title:null,accountMenu:'示例企业'});const inspected=await missing.run({action:'inspect'});assert.equal((await missing.run({action:'hover',avatarKey:inspected.avatarCandidates[0].avatarKey})).visibleAccountId,null);
 });
 test('browser mismatch or changed avatar stops before hover',async()=>{
   const f=fixture({family:'Chrome'});assert.equal((await f.run({action:'inspect'})).status,'identity-read-failed');assert.equal(f.events.length,0);

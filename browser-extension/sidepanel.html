@@ -1,8 +1,31 @@
 <!doctype html>
-<html lang="zh-CN"><meta charset="utf-8"><title>施工图助手</title>
-<style>body{font:14px system-ui;margin:20px;color:#223047}h1{font-size:21px}section{border:1px solid #ddd;border-radius:10px;padding:14px;margin:14px 0}button,select{padding:9px;margin:5px 0;max-width:100%}button{background:#2159da;color:white;border:0;border-radius:6px;cursor:pointer}button:disabled{opacity:.5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}small{color:#657084}</style>
-<h1>施工图助手</h1><small>HTTP 连接版 · 只读验证</small>
-<section><strong>服务连接</strong><p id="connection">正在检查…</p><button id="reconnect">重新连接</button><small><p>旧桌面管理器不显示此连接状态。</p></small></section>
-<section><strong>目标后台页面</strong><p><select id="pages" aria-label="选择后台页面"></select></p><button id="refresh">刷新页面列表</button><p><small>读取所选标签页，不切换配置。</small></p></section>
-<section><strong>接口读取</strong><p><button id="observe">读取接口记录</button></p><p><button id="templates">读取模板列表</button></p><small>只读；不会修改、保存或发布。接口记录只包含路径和参数名。</small></section>
-<button id="fullconfig">读取当前配置接口</button><section><strong>自动采集 · 刷新保留版</strong><p><button id="captureStart">开始采集</button> <button id="captureStop">停止并查看</button></p><small>记录在扩展侧保留，网页刷新后继续采集；10分钟自动停止。开始前关闭开发者工具，浏览器可能显示调试提示。重启浏览器或重新加载扩展会清空记录。编码正文不会自动解码。</small></section><p id="status" role="status"></p><pre id="result"></pre><script type="module" src="sidepanel.js"></script></html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>施工图助手</title><link rel="stylesheet" href="panel.css"></head>
+<body>
+<header><h1>施工图助手</h1><span id="browser" class="badge">当前浏览器</span></header>
+<section aria-labelledby="connectionHeading">
+<h2 id="connectionHeading">服务连接</h2><p id="connection" role="status">正在检查…</p><p id="connectionDetail" class="muted"></p>
+<div class="actions"><button id="refresh" class="primary">刷新状态</button><button id="connect">重新连接</button></div>
+</section>
+<section aria-labelledby="pageHeading">
+<h2 id="pageHeading">页面与账号</h2><label class="muted" for="pages">选择当前浏览器中的页面</label><select id="pages"></select>
+<dl>
+<div class="field"><dt>页面类型</dt><dd id="role">未选择页面</dd></div>
+<div class="field"><dt>登录账号</dt><dd id="company" class="name">未读取</dd></div>
+<div class="field"><dt>页面账号 ID</dt><dd><code id="accountId">未读取</code></dd></div>
+<div class="field" id="sourceRow" hidden><dt>来源客户</dt><dd id="source">未读取</dd></div>
+<div class="field" id="sourceIdRow" hidden><dt>来源客户 ID</dt><dd><code id="sourceId">未读取</code></dd></div>
+<div class="field" id="templateRow" hidden><dt>当前基础模板</dt><dd id="template">未读取</dd></div>
+</dl>
+<p id="identityTime" class="muted"></p><div class="actions"><button id="readIdentity" hidden>更新头像账号和 ID</button></div>
+</section>
+<details><summary>页面连接标识</summary><dl>
+<div class="field"><dt>浏览器会话 ID</dt><dd><code id="clientId">未读取</code></dd></div>
+<div class="field"><dt>MCP 页面 ID</dt><dd><code id="pageId">未读取</code></dd></div>
+<div class="field"><dt>标签页 ID</dt><dd><code id="tabId">未读取</code></dd></div>
+<div class="field"><dt>页面地址</dt><dd id="url">未读取</dd></div>
+</dl><p class="muted">连接标识用于定位页面，与页面账号 ID 不同。</p></details>
+<p id="notice" role="status" aria-live="polite"></p>
+<p class="muted">仅显示当前浏览器。名称和账号 ID 来自页面，模板是否应用需单独核对。</p>
+<script type="module" src="sidepanel.js"></script>
+</body></html>

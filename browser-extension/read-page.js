@@ -3,7 +3,8 @@ export function readDrawingPage(options = {}) {
   const text = node => (node?.innerText || node?.textContent || '').trim().replace(/\s+/g, ' ');
   const visible = node => Boolean(node?.getClientRects().length) && getComputedStyle(node).visibility !== 'hidden';
   const cleanUrl = location.origin + location.pathname;
-  const selected = document.querySelector('#rc_select_0')?.closest('.ant-select')?.querySelector('.ant-select-selection-item');
+  const namedSelects=[...document.querySelectorAll('.ant-select')].filter(n=>visible(n)&&!n.closest('table,.ant-pagination,[role="dialog"],.ant-modal')&&n.querySelector('[role="combobox"]'));
+  const selected = namedSelects.length===1?namedSelects[0].querySelector('.ant-select-selection-item'):document.querySelector('#rc_select_0')?.closest('.ant-select')?.querySelector('.ant-select-selection-item');
   const configuration = document.querySelector('[class*="TopBarRightComponent-configDesc"]');
   const label = document.querySelector('[class*="LogoBlock-ep-name"]');
   const notice = document.body?.innerText.includes('你正在登录客户账号') || false;
