@@ -6,6 +6,7 @@
 - [通用新建线样式：参数、执行和失败恢复](../skills/kujiale-drawing-bridge/references/line-style-create.md)
 - [当前 HTTP 连接与主机配置](../skills/kujiale-drawing-bridge/references/connection-http.md)
 - [通用工具请求示例](generic-line-style-mcp.md)
+- [通用载入客户配置](../skills/kujiale-drawing-bridge/references/customer-load.md)：任意有权访问的主账号、同名区分、来源与默认模板回读。
 
 真实页面已完成一条线样式草稿：自定义名称、DOT、颜色 255、0.09 mm，比例保留网页默认值。
 该证据只证明页面字段设置和回读，不证明持久化保存，不代表全部可选值均已验证。

@@ -4,6 +4,9 @@ const writeTarget = {
 };
 
 export const tools = [
+  {name:'drawing_load_customer_config',description:'通用载入客户施工图配置。customerName 可为当前登录账号有权访问的任意主账号显示名称；同名时用 inspect 返回的 customerLabel 完整标签区分。先用 drawing_get_context 获取 pageId 和 configStatusText 作为 expectedStatus。inspect 只检查候选项，load 选择唯一匹配账号并点击载入，再回读来源标签和侧边模板；不切换登录账号，不强制指定模板，不保存或发布。已记录但未确认保存的草稿会阻止切换；不能据此检测所有手动未保存修改。loaded 仅表示来源显示标签核验，identityVerified=false；结果不确定时禁止自动重试。',
+    annotations:{readOnlyHint:false,destructiveHint:true,idempotentHint:false,openWorldHint:true},
+    inputSchema:{type:'object',additionalProperties:false,properties:{pageId:{type:'string',minLength:1,maxLength:120},customerName:{type:'string',minLength:1,maxLength:200,description:'目标主账号的准确显示名称，不是当前登录操作员名称'},customerLabel:{type:'string',minLength:1,maxLength:400,description:'可选；inspect 返回的完整候选标签，用于区分同名账号，不自行猜测'},expectedStatus:{type:'string',minLength:1,maxLength:300,description:'最近一次 drawing_get_context 返回的当前配置 configStatusText'},mode:{type:'string',enum:['inspect','load'],maxLength:10}},required:['pageId','customerName','expectedStatus','mode']}},
   { name: 'drawing_create_line_draft', description: '通用新建线样式草稿：在已打开的线样式页创建一行，按参数设置名称、线型、CAD颜色索引、线宽，再回读所有字段。复用网页操作，无须网站HTTP接口。线型比例保留网页默认值。不会保存、发布或刷新。先用 drawing_get_context 核对 pageId、配置名称和来自于标签。重名检查仅覆盖当前网页分页；失败可能留下部分修改。requestId 每项新任务唯一，恢复同一任务时不得改变参数。成功返回 status=draft-fields-verified、style 和 saved=false。',
     annotations: { readOnlyHint:false, destructiveHint:false, idempotentHint:false, openWorldHint:true },
     inputSchema: {type:'object',additionalProperties:false,
