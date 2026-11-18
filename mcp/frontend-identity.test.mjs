@@ -7,19 +7,20 @@ import {createProtocol} from './protocol.mjs';
 import {Broker} from './broker.mjs';
 
 const script=readFileSync(new URL('../browser-extension/frontend-identity-page.js',import.meta.url),'utf8');
-function fixture({title='示例企业',tooltip=null,family='Edge',outsideName=null,ambiguous=false}={}){
+function fixture({title='示例企业',tooltip=null,accountMenu=null,family='Edge',outsideName=null,ambiguous=false}={}){
   const events=[];
   const body={children:[],getAttribute:()=>null,parentElement:null};
   const make=(attrs={},tag='IMG')=>({tagName:tag,id:'',attrs,parentElement:body,children:[],isConnected:true,
     getAttribute(k){return this.attrs[k]??null;},getClientRects:()=>[{}],contains:()=>false,
     getBoundingClientRect:()=>({x:900,y:20,width:40,height:40}),
-    dispatchEvent(e){events.push(e.type);if(e.type==='mouseover'&&tooltip)tipVisible=true;},
+    dispatchEvent(e){events.push(e.type);if(e.type==='mouseover'&&(tooltip||accountMenu))tipVisible=true;},
     click(){throw Error('Identity reader must never click');}});
   const avatar=make({class:'account-avatar',title});body.children.push(avatar);
   let tipVisible=false;
   const tip=Object.assign(make({},'DIV'),{innerText:tooltip,getClientRects:()=>tipVisible?[{}]:[],getBoundingClientRect:()=>({x:850,y:60,width:140,height:40})});
+  const menuName=Object.assign(make({class:'TopBar-account-name_example'},'DIV'),{innerText:accountMenu,getClientRects:()=>tipVisible?[{}]:[],getBoundingClientRect:()=>({x:850,y:63,width:134,height:22})});
   const second=make({class:'second-avatar',title:'其他企业'});if(ambiguous)body.children.push(second);
-  const document={body,querySelectorAll:s=>s.startsWith('img,')?(ambiguous?[avatar,second]:[avatar]):s.includes('tooltip')?[tip]:[],title:'design'};
+  const document={body,querySelectorAll:s=>s.startsWith('img,')?(ambiguous?[avatar,second]:[avatar]):s.includes('tooltip')?[tip]:s.includes('TopBar-account-name_')?[menuName]:[],title:'design'};
   const box={document,navigator:{userAgent:family==='Edge'?'Chrome/120 Edg/120':'Chrome/120'},innerWidth:1000,window:{},
     location:{origin:'https://www.kujiale.com',hostname:'www.kujiale.com',protocol:'https:',port:'',pathname:'/tool/h5/bim',href:'https://www.kujiale.com/tool/h5/bim'},
     getComputedStyle:()=>({visibility:'visible'}),MouseEvent:class{constructor(type){this.type=type;}},setTimeout:f=>f()};
@@ -43,6 +44,10 @@ test('hover reads new nearby tooltip and cleans up mouse events',async()=>{
 test('unrelated page text does not establish company identity',async()=>{
   const f=fixture({title:'头像',outsideName:'示例企业'});const p=await f.run({action:'inspect'});const r=await f.run({action:'hover',avatarKey:p.avatarCandidates[0].avatarKey});
   assert.equal(r.status,'identity-unconfirmed');assert.equal(r.companyDisplayName,null);
+});
+test('custom toolbar account menu supplies the name without requiring a tooltip role',async()=>{
+  const f=fixture({title:null,accountMenu:'示例企业'});const p=await f.run({action:'inspect'});const r=await f.run({action:'hover',avatarKey:p.avatarCandidates[0].avatarKey});
+  assert.equal(r.status,'display-name-match');assert.equal(r.evidence[0].source,'avatar-account-menu');
 });
 test('browser mismatch or changed avatar stops before hover',async()=>{
   const f=fixture({family:'Chrome'});assert.equal((await f.run({action:'inspect'})).status,'identity-read-failed');assert.equal(f.events.length,0);

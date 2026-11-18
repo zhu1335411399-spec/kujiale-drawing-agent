@@ -16,7 +16,7 @@
 
 | 工具 | 能力 | 当前证据 |
 |---|---|---|
-| drawing_read_frontend_identity | 按浏览器和设计页定位右上角头像，读取 title 或悬停提示并比较企业名称 | 已注册并部署源码；真实 Edge 名称待扩展重载后验收，不作为已匹配 |
+| drawing_read_frontend_identity | 按浏览器和设计页定位右上角头像，读取 title 或悬停提示并比较企业名称 | 真实 Edge 头像悬停已读取企业名称，并与同次 Chrome 后台来源匹配；仅验证显示名称 |
 
 Chrome/Edge 会话类型已在真实桥接中分别读取。名称核对不代表真实账号ID、模板或版本已验证。操作合同见 [头像名称核对](frontend-identity.md)。
 

@@ -4,7 +4,7 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
   const clean=s=>(s||'').trim().replace(/\s+/g,' ');
   const visible=n=>!!n?.getClientRects().length&&getComputedStyle(n).visibility!=='hidden';
   const browser=navigator.userAgent.includes('Edg/')?'Edge':navigator.userAgent.includes('Chrome/')?'Chrome':'unknown';
-  const result={readerBuild:'frontend-identity-1',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
+  const result={readerBuild:'frontend-identity-3',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
     status:'identity-unconfirmed',companyDisplayName:null,displayNameMatch:null,identityVerified:false,saved:false,published:false,evidence:[]};
   const generic=new Set(['头像','用户头像','账号','账户','个人中心','用户中心','avatar','profile','account']);
   const usable=s=>!!clean(s)&&clean(s).length<=200&&!generic.has(clean(s).toLowerCase())&&!/https?:\/\//i.test(s);
@@ -55,6 +55,12 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
       const described=new Set();let owner=avatar;
       for(let i=0;owner&&i<3;i++,owner=owner.parentElement)for(const id of (owner.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean))described.add(id);
       const a=avatar.getBoundingClientRect();
+      // Observed on the real design toolbar: the account name is in a custom menu, not a tooltip.
+      for(const n of [...document.querySelectorAll('[class*="TopBar-account-name_"]')].filter(visible)){
+        const t=text(n),r=n.getBoundingClientRect();
+        const nearby=r.x+r.width>=a.x-200&&r.x<=a.x+a.width+160&&r.y>=0&&r.y<=a.y+a.height+180;
+        if(usable(t)&&nearby)result.evidence.push({source:'avatar-account-menu',text:t,selector:'[class*="TopBar-account-name_"]',bounds:rect(n)});
+      }
       for(const n of tooltipNodes()){
         const t=text(n),r=n.getBoundingClientRect();
         const nearby=r.x+r.width>=a.x-160&&r.x<=a.x+a.width+160&&r.y>=0&&r.y<=a.y+a.height+180;

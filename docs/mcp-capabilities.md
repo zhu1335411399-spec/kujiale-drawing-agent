@@ -15,7 +15,7 @@
 ## 前端账号只读采集
 
 新增 drawing_read_frontend_identity，使用实际浏览器类型和 pageId 定位，分 inspect 与 hover 两步，读取头像关联名称。
-详见 [前端头像读取](../skills/kujiale-drawing-bridge/references/frontend-identity.md)。已确认两个浏览器连接，不等于已读取头像或完成图纸验收。
+详见 [前端头像读取](../skills/kujiale-drawing-bridge/references/frontend-identity.md)。已通过真实 MCP 调用读取 Edge 头像账号菜单中的企业名称，并与 Chrome 后台来源名称匹配；图纸、模板和配置版本尚未因此得到验证。
 
 ## 代码分组
 
