@@ -12,6 +12,11 @@
 该证据只证明页面字段设置和回读，不证明持久化保存，不代表全部可选值均已验证。
 另一组参数验证时页面停留在注释样式子标签，工具在新建前拒绝执行，没有将其计为成功。
 
+## 前端账号只读采集
+
+新增 drawing_read_frontend_identity，使用实际浏览器类型和 pageId 定位，分 inspect 与 hover 两步，读取头像关联名称。
+详见 [前端头像读取](../skills/kujiale-drawing-bridge/references/frontend-identity.md)。已确认两个浏览器连接，不等于已读取头像或完成图纸验收。
+
 ## 代码分组
 
 | 目录 | 职责 |

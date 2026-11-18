@@ -13,12 +13,13 @@ test('HTTP MCP initialize, tool list and browser request round trip', async () =
     const list = await post('/mcp', { jsonrpc: '2.0', id: 2, method: 'tools/list' });
     assert.ok(list.result.tools.some(t => t.name === 'drawing_read_api'));
     const clientId = randomUUID(), instanceId = randomUUID();
-    await post('/bridge', { route: '/poll', clientId, instanceId });
+    await post('/bridge', { route: '/poll', clientId, instanceId, report:{browser:'Edge'} });
     const pending = b.broker.page(clientId + ':1', 'api-read', { resource: 'observed-requests' });
     const { task } = await post('/bridge', { route: '/poll', clientId, instanceId });
     assert.equal(task.operation, 'api-read');
     await post('/bridge', { route: '/result', clientId, instanceId, id: task.id, value: { replayed: false } });
     assert.deepEqual(await pending, { replayed: false });
+    assert.equal(b.broker.clients.get(clientId).browser,'Edge');
   } finally { await b.close(); }
 });
 test('rejects website origin and unexpected host', async () => {

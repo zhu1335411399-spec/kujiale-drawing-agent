@@ -6,6 +6,7 @@ import { createCaptureStore } from './capture-store.js';
 import { newLineOnly } from './new-line-only.js';
 import { createLineDraft } from './create-line-draft.js';
 import { loadCustomerConfig } from './load-customer-config.js';
+import { readFrontendIdentity } from './frontend-identity.js';
 import { readDrawingPage } from './read-page.js';
 import { inspectLineStyleControls } from './inspect-controls.js?build=color-structure-2';
 import { readLineStyleOptions } from './read-options.js?build=options-close-fix-2';
@@ -130,6 +131,12 @@ export async function collectLineOptions() {
 }
 
 export async function perform(task) {
+  if (task.operation === 'frontend-identity') {
+    if (collectingOptions) throw new Error('Another operation is running');
+    collectingOptions = true;
+    try { return await readFrontendIdentity({ chromeApi: chrome, tabId: task.args.tabId, args: task.args }); }
+    finally { collectingOptions = false; }
+  }
   if (task.operation === 'load-customer-config') {
     if (collectingOptions) throw new Error('Another operation is running');
     collectingOptions = true;

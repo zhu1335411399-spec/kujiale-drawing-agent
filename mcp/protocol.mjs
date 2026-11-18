@@ -50,9 +50,9 @@ export function createProtocol(broker) {
               result = { isError: true, content: [{ type: 'text', text: JSON.stringify(detail) }] };
               break;
             }
-            const value = name === 'drawing_load_customer_config' ? await broker.page(args.pageId, 'load-customer-config', args) : name === 'drawing_create_line_draft' ? await broker.page(args.pageId, 'create-line-draft', args) : name === 'drawing_new_line_style' ? await broker.page(args.pageId, 'new-line-only', args) : name === 'drawing_get_context' ? await broker.context() :
+            const value = name === 'drawing_read_frontend_identity' ? await broker.page(args.pageId, 'frontend-identity', args) : name === 'drawing_load_customer_config' ? await broker.page(args.pageId, 'load-customer-config', args) : name === 'drawing_create_line_draft' ? await broker.page(args.pageId, 'create-line-draft', args) : name === 'drawing_new_line_style' ? await broker.page(args.pageId, 'new-line-only', args) : name === 'drawing_get_context' ? await broker.context() :
               await broker.page(args.pageId, name === 'drawing_capture_api' ? 'capture-api' : name === 'drawing_create_line_style_and_save' ? 'create-line-workflow' : name === 'drawing_read_api' ? 'api-read' : name === 'drawing_read_config' ? 'config' : name === 'drawing_create_line_style' ? 'create-line-style' : 'styles', args);
-            result = { ...((name === 'drawing_create_line_draft' && value?.status !== 'draft-fields-verified') || (name === 'drawing_load_customer_config' && value?.status !== 'dialog-inspected' && !value?.loaded) ? { isError: true } : {}), content: [{ type: 'text', text: JSON.stringify(value) }] };
+            result = { ...((name === 'drawing_create_line_draft' && value?.status !== 'draft-fields-verified') || (name === 'drawing_load_customer_config' && value?.status !== 'dialog-inspected' && !value?.loaded) || (name === 'drawing_read_frontend_identity' && value?.status === 'identity-read-failed') ? { isError: true } : {}), content: [{ type: 'text', text: JSON.stringify(value) }] };
           } catch (error) {
             result = { isError: true, content: [{ type: 'text', text: error.message }] };
           }

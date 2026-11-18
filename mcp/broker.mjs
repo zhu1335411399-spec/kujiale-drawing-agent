@@ -7,7 +7,7 @@ export class Broker {
     this.timeoutMs = timeoutMs;
   }
 
-  register(id, instanceId) {
+  register(id, instanceId, report) {
     if (!/^[a-f0-9-]{36}$/.test(id || '') || !/^[a-f0-9-]{36}$/.test(instanceId || '')) throw new Error('Invalid browser identity');
     const old = this.clients.get(id);
     if (old && old.instanceId !== instanceId) {
@@ -17,7 +17,7 @@ export class Broker {
       for (const [key, client] of this.clients) if (Date.now() - client.seenAt > 60000) this.clients.delete(key);
       if (this.clients.size >= 16) throw new Error('Too many browser profiles');
     }
-    this.clients.set(id, { seenAt: Date.now(), instanceId });
+    this.clients.set(id, { seenAt: Date.now(), instanceId, browser: ['Chrome','Edge'].includes(report?.browser) ? report.browser : old?.browser || null });
   }
 
   submit(clientId, operation, args) {
@@ -58,7 +58,7 @@ export class Broker {
       try {
         const pages = await this.submit(id, 'context', {});
         if (!Array.isArray(pages)) throw new Error('Invalid page response');
-        return { clientId: id, pages: pages.map(page => ({ ...page, pageId: id + ':' + page.tabId })) };
+        return { clientId: id, browser: this.clients.get(id)?.browser || null, pages: pages.map(page => ({ ...page, pageId: id + ':' + page.tabId })) };
       } catch (error) {
         return { clientId: id, pages: [], error: error.message };
       }

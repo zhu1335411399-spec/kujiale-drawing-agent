@@ -30,7 +30,7 @@ export async function startHttpBridge({ port = 8788 } = {}) {
         return result === null ? reply(202) : reply(200, result);
       }
       if (input.route === '/poll') {
-        broker.register(input.clientId, input.instanceId);
+        broker.register(input.clientId, input.instanceId, input.report);
         return reply(200, { task: broker.poll(input.clientId, input.instanceId) });
       }
       if (input.route === '/result') {

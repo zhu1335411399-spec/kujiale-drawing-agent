@@ -18,9 +18,10 @@ try {
   const initialized = await agent.call('/mcp', { jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-03-26' } });
   assert.equal(initialized.result.serverInfo.version, '0.6.0');
   const tools = (await agent.call('/mcp', { jsonrpc: '2.0', id: 2, method: 'tools/list' })).result.tools;
-  assert.equal(tools.length, 5);
-  assert.ok(tools.slice(0, 3).every(tool => tool.annotations.readOnlyHint));
-  assert.ok(tools.slice(3).every(tool => tool.annotations.readOnlyHint === false));
+  assert.equal(new Set(tools.map(tool=>tool.name)).size,tools.length);
+  for(const name of ['drawing_get_context','drawing_read_config','drawing_list_line_styles','drawing_save_config','drawing_publish_config','drawing_create_line_style','drawing_read_frontend_identity'])assert.ok(tools.some(tool=>tool.name===name),'Required tool missing: '+name);
+  assert.ok(tools.filter(tool => ['drawing_get_context', 'drawing_read_config', 'drawing_list_line_styles', 'drawing_read_frontend_identity'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+  assert.ok(tools.filter(tool => ['drawing_save_config', 'drawing_publish_config', 'drawing_create_line_style'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint === false));
   assert.equal((await rpc('drawing_get_context')).result.isError, true);
   assert.equal((await rpc('drawing_read_config')).error.code, -32602);
   const clientId = randomUUID(), otherId = randomUUID(), instanceId = randomUUID();
@@ -86,7 +87,7 @@ const manifest = JSON.parse(fs.readFileSync(new URL('../browser-extension/manife
 const origin = 'chrome-extension://' + extensionId(manifest.key) + '/';
 assert.match(origin, /^chrome-extension:\/\/[a-p]{32}\/$/);
 assert.ok(manifest.permissions.includes('nativeMessaging'));
-assert.ok(!manifest.host_permissions.some(value => value.startsWith('http:')));
+assert.deepEqual(manifest.host_permissions.filter(value => value.startsWith('http:')),['http://127.0.0.1:8788/*']);
 const hostFile = fileURLToPath(new URL('./native-host.mjs', import.meta.url));
 const host = spawn(process.execPath, [hostFile, origin], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
 let stderr = '';
