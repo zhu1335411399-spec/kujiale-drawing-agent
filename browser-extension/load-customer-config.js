@@ -1,5 +1,10 @@
 // Inject the bundled page adapter on each operation, rather than retaining its function in worker memory.
+import {withTrustedLineInputs} from './trusted-line-input.js';
 export async function loadCustomerConfig({chromeApi,tabId,args}) {
+ if(args.configurationTask==='update'&&!args.trustedInputActive){
+   return withTrustedLineInputs({chromeApi,tabId,values:{rename:args.changes?.name,scale:args.changes?.scale,colorIndex:args.changes?.colorIndex},target:args,
+     run:()=>loadCustomerConfig({chromeApi,tabId,args:{...args,trustedInputActive:true}})});
+ }
  if(!args.customerName?.trim()||args.customerName.length>200)throw Error('Customer display name required');
  const stored=await chromeApi.storage.local.get(null);
  const drafts=Object.entries(stored).filter(([k,v])=>k.startsWith('line-draft:')&&v?.created&&!v.saved&&v.style?.id).map(([,v])=>v.style);

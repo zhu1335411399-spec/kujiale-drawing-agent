@@ -46,9 +46,9 @@ function fixture({labels=['示例客户 (a***@example.test)'],source='原客户'
     querySelectorAll:s=>s==='.ant-select'?[selector,pagination]:s==='tr[data-row-key]'?rows:s.includes('role="dialog"')?[dialog]:[]};
   const session=new Map();
   const sandbox={document,location:{origin:'https://www.kujiale.com',pathname:'/pub/saas/workbench/construction/drawing_config/config/style'},getComputedStyle:()=>({visibility:'visible'}),
-    setTimeout:fn=>{fn();},Event:class{},MouseEvent:class{},HTMLInputElement:Input,sessionStorage:{getItem:k=>session.get(k),setItem:(k,v)=>session.set(k,v)}};
+    setTimeout:fn=>{fn();},Event:class{},MouseEvent:class{},HTMLInputElement:Input,performance:{timeOrigin:1},sessionStorage:{getItem:k=>session.get(k),setItem:(k,v)=>session.set(k,v)}};
   vm.runInNewContext(adapter,sandbox);
-  return {run:args=>sandbox.__drawingCustomerLoadPage({customerName:'示例客户',expectedStatus:status.innerText,mode:'load',drafts,...args}),submits:()=>submits,dialog};
+  return {run:args=>sandbox.__drawingCustomerLoadPage({customerName:'示例客户',expectedStatus:status.innerText,mode:'load',drafts,...args}),submits:()=>submits,dialog,status,sandbox};
 }
 
 test('generic name selects a masked-email option, submits load, and reads default template',async()=>{
@@ -61,6 +61,12 @@ test('same names require a complete label before submission',async()=>{
   const labels=['示例客户 (a***@example.test)','示例客户 (b***@example.test)'];
   const f=fixture({labels});const r=await f.run();assert.equal(r.status,'ambiguous-customer');assert.equal(f.submits(),0);
   const picked=fixture({labels});const p=await picked.run({customerLabel:labels[1]});assert.equal(p.status,'source-label-verified');assert.equal(p.matchedCustomerLabel,labels[1]);
+});
+
+test('load attempt protection distinguishes a new document from a duplicate submission',async()=>{
+  const f=fixture({uncertain:true});await f.run();assert.equal(f.submits(),1);
+  const duplicate=await f.run();assert.match(duplicate.error,/Prior load attempt/);assert.equal(f.submits(),1);
+  f.sandbox.performance.timeOrigin=2;await f.run();assert.equal(f.submits(),2);
 });
 test('inspect never submits and current-account suffix is accepted',async()=>{
   const f=fixture({labels:['示例客户 (a***@example.test) 你的账号']});const r=await f.run({mode:'inspect'});

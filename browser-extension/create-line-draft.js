@@ -1,7 +1,10 @@
 import { lineStyleAction } from './line-style-actions.js';
+import {withTrustedLineInputs} from './trusted-line-input.js';
 
 // Explicit draft only: no save, reload, publish, activation, import or deletion.
 export async function createLineDraft({ chromeApi, tabId, args }) {
+  if(chromeApi.debugger&&!args.trustedInputActive)return withTrustedLineInputs({chromeApi,tabId,values:{rename:args.name,colorIndex:args.colorIndex},target:args,
+    run:()=>createLineDraft({chromeApi,tabId,args:{...args,trustedInputActive:true}})});
   const result = { created: false, saved: false, published: false, status: 'blocked' };
   const key = 'line-draft:' + args.requestId;
   let attempted = false;

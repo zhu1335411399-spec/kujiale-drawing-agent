@@ -1,5 +1,6 @@
 import { workflowInstructions } from './workflow.mjs';
 import { tools, validateCall } from './tools.mjs';
+import { dispatchLineStyleTool } from './line-style-dispatch.mjs';
 
 export const versions = ['2025-03-26', '2025-06-18', '2025-11-25'];
 
@@ -32,6 +33,11 @@ export function createProtocol(broker) {
           catch (error) { return fail(-32602, error.message); }
           try {
             const name = request.params.name;
+            if(['drawing_search_line_styles','drawing_update_line_style','drawing_save_line_style'].includes(name)){
+              const value=await dispatchLineStyleTool(broker,name,args);
+              const ok=name==='drawing_search_line_styles'?value.status==='search-results-read':name==='drawing_update_line_style'?['style-fields-verified','unchanged'].includes(value.status):value.saved||value.status==='unchanged';
+              result={...(!ok?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(value)}]};break;
+            }
             if (name === 'drawing_save_config' || name === 'drawing_publish_config') {
               const snapshot = await broker.page(args.pageId, 'config', {});
               const actualName = snapshot?.identity?.configName;

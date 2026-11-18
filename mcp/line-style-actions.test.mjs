@@ -21,14 +21,14 @@ function fixture() {
     querySelectorAll: selector => selector.startsWith('.ant-select-selection') ? [selected] : selector === 'table' ? [table] : selector === 'button' ? [save, create, publish] : []
   };
   const options = { action: 'inspect', expectedConfigName: 'MCP样式引用测试', expectedCustomerName: '示例客户Alpha' };
-  return { options, root, node, saveButton: save, saved: () => savedClicks, created: () => createClicks };
+  return { options, root, node, statusNode:status, saveButton: save, saved: () => savedClicks, created: () => createClicks };
 }
 test('reads without enabling writes', async () => {
   const f = fixture(); const result = await lineStyleAction(f.options);
   assert.equal(result.status, 'observed'); assert.equal(result.executed, false); assert.equal(f.saved(), 0);
 });
 test('rejects another customer, including substring matches', async () => {
-  const f = fixture(); f.options.expectedCustomerName = '木杉';
+  const f = fixture(); f.options.expectedCustomerName = '示例';
   const result = await lineStyleAction({ ...f.options, action: 'create', allowWrite: true });
   assert.equal(result.status, 'blocked'); assert.equal(f.created(), 0);
 });
@@ -48,6 +48,22 @@ test('a save click is explicitly unverified rather than saved', async () => {
 test('refuses save if the expected table snapshot changed', async () => {
   const f = fixture(); const result = await lineStyleAction({ ...f.options, action: 'save', allowWrite: true, expectedRows: [{ id: 'other' }] });
   assert.equal(result.status, 'blocked'); assert.equal(f.saved(), 0);
+});
+
+test('save button tolerates the two-character label spacing inserted by the UI', async () => {
+  const f=fixture();f.saveButton.innerText='保 存';
+  const result=await lineStyleAction({...f.options,action:'save',allowWrite:true,expectedRows:[]});
+  assert.equal(f.saved(),1);assert.equal(result.saved,false);
+});
+
+test('save confirmation checks the exact configuration and customer before submission',async()=>{
+  const f=fixture();let confirmed=0;
+  const confirm=f.node('保 存');confirm.click=()=>confirmed++;
+  const modal=f.node('确认将基础配置MCP样式引用测试保存在示例客户Alpha? 主账号邮箱: masked');modal.querySelectorAll=()=>[confirm];
+  const original=document.querySelectorAll;document.querySelectorAll=s=>s==='[role="dialog"],.ant-modal'?[modal]:original(s);
+  const r=await lineStyleAction({...f.options,action:'confirmSave',allowWrite:true,expectedRows:[]});assert.equal(confirmed,1);assert.equal(f.saved(),0);assert.equal(r.saved,false);
+  modal.innerText='确认将基础配置MCP样式引用测试保存在其他客户?';
+  const blocked=await lineStyleAction({...f.options,action:'confirmSave',allowWrite:true,expectedRows:[]});assert.equal(blocked.executed,false);assert.equal(confirmed,1);
 });
 function styleRow(f) {
   const values = { name: 'MCP_TEST_initial', lineType: 'CONTINUOUS', color: '150', widthMm: '0.13' };
@@ -135,4 +151,12 @@ test('does not accept a stale save-success toast as a new acknowledgement', asyn
     const result = await lineStyleAction({ ...f.options, action: 'save', allowWrite: true, expectedRows: [] });
     assert.equal(result.saveAcknowledged, false); assert.equal(result.saved, false);
   } finally { globalThis.MutationObserver = oldObserver; globalThis.setTimeout = oldTimeout; }
+});
+
+test('a newer save time for the same customer is fresh acknowledgement without a toast',async()=>{
+  const f=fixture();let callback;const oldObserver=globalThis.MutationObserver;
+  document.body={};globalThis.MutationObserver=class{constructor(fn){callback=fn;}observe(){}disconnect(){}};
+  f.saveButton.click=()=>{f.statusNode.innerText='当前 「基础配置」未激活 来自于 示例客户Alpha 2026-11-13 15:32:24';callback([]);};
+  try{const r=await lineStyleAction({...f.options,action:'save',allowWrite:true,expectedRows:[]});assert.equal(r.saveAcknowledged,true);assert.match(r.saveNotice,/配置保存时间已更新/);assert.equal(r.saved,false);}
+  finally{globalThis.MutationObserver=oldObserver;}
 });

@@ -43,6 +43,10 @@ description: 酷家乐施工图配置 Agent。用于按权限区分企业账号�
 
 载入不是自配置任务的必需步骤。用户要求由内部操作员载入某主账号时调用 drawing_load_customer_config；名称参数通用，仅限当前操作员可访问的候选账号。同名使用完整 customerLabel，保留载入后的当前默认模板。先读取最新上下文，载入后再次核对来源和模板；不自动保存、丢弃或发布。此工具不切换浏览器登录身份。
 
+## 搜索与修改已有线样式
+
+用 drawing_search_line_styles 执行真实网页名称搜索并检查分页完整性；用返回的完整原值快照及行 ID 调用 drawing_update_line_style，只传需要修改的字段。编辑成功取得 receiptId 后独立调用 drawing_save_line_style，确认保存提示和刷新回读；结果不确定时先读实际状态，不重放写入。CONTINUOUS 不设置比例，引用范围未知时如实报告。详细合同见 [搜索编辑流程](references/line-style-edit.md)。
+
 ## 按需参考
 
 - 核对前端账号显示时读取 [头像名称核对](references/frontend-identity.md)，记录实际浏览器、页面、头像证据与当前部署状态。
@@ -53,11 +57,12 @@ description: 酷家乐施工图配置 Agent。用于按权限区分企业账号�
 
 - 核对工具可用性时读取 [能力分组](references/capabilities.md)，区分已实测、诊断、实验与占位工具。
 - 新建线样式时读取 [新建流程](references/line-style-create.md)，按参数和已记录行执行并处理部分失败。
+- 搜索、修改或保存已有线样式时读取 [搜索编辑流程](references/line-style-edit.md)，使用原值快照、独立保存回执和刷新回读。
 - 配置连接时读取 [HTTP 连接](references/connection-http.md)，不要将旧管理器状态作为当前网关验收。
 
 ## 工具能力边界
 
-读取工具已实现；drawing_create_line_draft 已在真实页面完成新建和字段回读，但不保存、发布或重载。用户要求草稿试验时保留草稿并明确报告未保存；完整配置任务仍需独立保存和持久化验收。drawing_save_config、drawing_publish_config 当前仅进行目标核对，返回 executed:false 时未执行。实验性新建并保存入口不能当作保存已经验证。
+读取工具已实现；drawing_create_line_draft 已在真实页面完成新建和字段回读，但不保存、发布或重载。已有线样式的搜索、指定字段编辑与 drawing_save_line_style 独立保存已在真实浏览器完成；保存反馈、刷新后原客户同 ID 字段回读共同构成证据。新建草稿回执不能直接作为编辑保存回执，交接缺口仍需按新建参考处理。drawing_save_config、drawing_publish_config 当前仅进行目标核对，返回 executed:false 时未执行，不能据线样式保存成功宣称通用保存或其他分类已支持。
 
 前端更新配置、自动标注、另存为、生成图纸和恢复尚无自动执行工具。需要这些步骤但工具不可用时，说明实际缺口并指导用户完成，不能声称已经自动执行。
 

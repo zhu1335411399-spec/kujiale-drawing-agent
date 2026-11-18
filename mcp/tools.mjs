@@ -4,6 +4,15 @@ const writeTarget = {
 };
 
 export const tools = [
+  {name:'drawing_search_line_styles',description:'在已打开线样式页使用网页搜索框搜索名称，并逐页读取结果；区别于当前页本地过滤。返回实际记录ID和原字段快照、已检查结果页数及complete。范围是网页搜索结果，不能据此宣称搜索了所有库；结果未查完整时禁止用于唯一定位。不修改样式或保存。',
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true},
+    inputSchema:{type:'object',additionalProperties:false,properties:{...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},query:{type:'string',minLength:0,maxLength:100},match:{type:'string',enum:['exact','contains'],maxLength:10},maxPages:{type:'integer',minimum:1,maximum:10}},required:['pageId','expectedConfigName','expectedCustomerName','query']}},
+  {name:'drawing_update_line_style',description:'编辑明确选定的已有线样式。必须提供网页搜索返回的完整expectedStyle原值快照及唯一requestId，只修改changes中的字段。全量核对线样式分页及未修改记录；同名、原值变化、只读锁或范围未查完整时停止。CONTINUOUS不可设置比例。返回编辑回执receiptId，尚未保存；有引用的样式影响范围当前未知。失败可能留下部分修改，不盲目重复。',
+    annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:true},
+    inputSchema:{type:'object',additionalProperties:false,properties:{...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},requestId:{type:'string',minLength:8,maxLength:100},expectedStyle:{type:'object',additionalProperties:false,properties:Object.fromEntries(['id','name','lineType','scale','color','widthMm'].map(k=>[k,{type:'string',maxLength:300}])),required:['id','name','lineType','scale','color','widthMm']},changes:{type:'object',additionalProperties:false,minProperties:1,properties:Object.fromEntries(['name','lineType','scale','colorIndex','widthMm'].map(k=>[k,{type:'string',minLength:1,maxLength:100}]))}},required:['pageId','expectedConfigName','expectedCustomerName','requestId','expectedStyle','changes']}},
+  {name:'drawing_save_line_style',description:'独立保存已验证编辑回执对应的线样式变更。不新建、不发布。保存前核对线样式，精确核对客户确认框，观察新成功提示或保存时间更新后刷新回读。刷新回到操作员自己的配置时，仅重新载入原客户一次并核对原配置。必须使用同一页面的receiptId，已确认提交后只核验、不重复保存。回读不代表独立服务器API验证，不能保存其他分类。',
+    annotations:{readOnlyHint:false,destructiveHint:true,idempotentHint:false,openWorldHint:true},
+    inputSchema:{type:'object',additionalProperties:false,properties:{...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},receiptId:{type:'string',minLength:8,maxLength:100}},required:['pageId','expectedConfigName','expectedCustomerName','receiptId']}},
   {name:'drawing_read_frontend_identity',description:'只读检查指定浏览器设计页右上角头像。先 inspect 返回实际头像候选，再用返回的 avatarKey 执行 hover，读取头像标题、提示或账号菜单中的名称及可见账号ID。expectedBrowser 必须与实际浏览器匹配。账号ID没有证据时为null，不从名称推断后台客户ID，不核验企业归属、模板或配置已生效。不点击、切换账号、保存、发布；未知或多个名称保持未确认。',
     annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true},
     inputSchema:{type:'object',additionalProperties:false,properties:{pageId:{type:'string',minLength:1,maxLength:120},action:{type:'string',enum:['inspect','hover'],maxLength:10},expectedBrowser:{type:'string',enum:['Chrome','Edge'],maxLength:10},expectedCompanyName:{type:'string',minLength:1,maxLength:200},frameId:{type:'integer',minimum:0,maximum:2147483647,description:'inspect 返回的目标头像所在 frameId，默认主页面0'},avatarKey:{type:'string',minLength:1,maxLength:5000}},required:['pageId','action','expectedBrowser','expectedCompanyName']}},
@@ -112,6 +121,16 @@ export function validateCall(name, value = {}) {
   if (!tool) throw new Error('Unknown tool');
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Arguments must be an object');
   const schema = tool.inputSchema;
+  if(name==='drawing_update_line_style'){
+    if(!/^[A-Za-z0-9_-]{8,100}$/.test(value.requestId||''))throw Error('Invalid edit request ID');
+    const style=value.expectedStyle,patch=value.changes;
+    if(!style||typeof style!=='object'||Array.isArray(style)||Object.keys(style).sort().join(',')!=='color,id,lineType,name,scale,widthMm'||Object.values(style).some(v=>typeof v!=='string'||v.length>300)||!style.id||!style.name)throw Error('Complete original style snapshot required');
+    if(!patch||typeof patch!=='object'||Array.isArray(patch)||!Object.keys(patch).length||Object.keys(patch).some(k=>!['name','lineType','scale','colorIndex','widthMm'].includes(k))||Object.values(patch).some(v=>typeof v!=='string'||!v.trim()||v.length>100))throw Error('Explicit supported style changes required');
+    if(patch.lineType!==undefined&&!/^[A-Z0-9_]+$/.test(patch.lineType))throw Error('Invalid line type');
+    if(patch.colorIndex!==undefined&&(!/^\d+$/.test(patch.colorIndex)||Number(patch.colorIndex)>255))throw Error('Invalid color index');
+    for(const k of ['scale','widthMm'])if(patch[k]!==undefined&&(!/^\d+(\.\d+)?$/.test(patch[k])||Number(patch[k])<=0))throw Error('Invalid '+k);
+  }
+  if(name==='drawing_save_line_style'&&!/^[A-Za-z0-9_-]{8,100}$/.test(value.receiptId||''))throw Error('Invalid edit receipt ID');
   if (name === 'drawing_read_frontend_identity' && value.action === 'hover' && !value.avatarKey) throw new Error('Inspect and select avatarKey before hover');
   if (name === 'drawing_create_line_draft' && (!/^[A-Za-z0-9_-]{8,100}$/.test(value.requestId || '') ||
       !value.name?.trim() || !/^[A-Z0-9_]+$/.test(value.lineType || '') ||

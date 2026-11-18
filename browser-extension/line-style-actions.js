@@ -1,4 +1,4 @@
-// Development adapter. Not wired into the installed bridge until live acceptance.
+// Bound line-style page actions. Controlled input uses the authorized browser input session.
 // One explicit action per invocation; never publish, activate, delete, or import.
 export async function lineStyleAction(options = {}) {
   const result = { adapterBuild: 'line-style-actions-2', executed: false, saved: false,
@@ -6,7 +6,14 @@ export async function lineStyleAction(options = {}) {
   const visible = node => Boolean(node?.getClientRects().length) && getComputedStyle(node).visibility !== 'hidden';
   const text = node => (node?.innerText || node?.textContent || '').trim().replace(/\s+/g, ' ');
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const allowedActions = ['inspect', 'create', 'rename', 'lineType', 'scale', 'widthMm', 'colorIndex', 'save'];
+  const fill=async input=>{
+    input.focus?.();input.select?.();
+    if(typeof globalThis.__drawingTrustedFill==='function')return globalThis.__drawingTrustedFill(input,options.value,options.action,options.rowId);
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,options.value);
+    input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));
+    return 'dom-events';
+  };
+  const allowedActions = ['inspect', 'create', 'rename', 'lineType', 'scale', 'widthMm', 'colorIndex', 'save', 'confirmSave'];
   try {
     if (!allowedActions.includes(options.action)) throw new Error('Unsupported action');
     if (!['https://www.kujiale.com', 'https://beta.kujiale.com', 'https://yun.kujiale.com', 'https://yun-beta.kujiale.com'].includes(location.origin) ||
@@ -40,16 +47,22 @@ export async function lineStyleAction(options = {}) {
     };
     result.before = rows().map(snapshot);
     result.scope = 'current-rendered-web-page';
-    if (options.action === 'inspect') { result.status = 'observed'; return result; }
+    if (options.action === 'inspect') {
+      result.buttons=[...document.querySelectorAll('button')].filter(visible).slice(0,30).map(n=>({label:text(n),disabled:!!n.disabled}));
+      const dialogs=[...document.querySelectorAll('[role="dialog"],.ant-modal,[class*="Modal-modal"],[class*="Dialog-dialog"]')].filter(visible);
+      result.dialogs=dialogs.filter(n=>!dialogs.some(other=>other!==n&&n.contains(other))).map(n=>({text:text(n).slice(0,1200),buttons:[...n.querySelectorAll('button')].filter(visible).map(b=>({label:text(b),disabled:!!b.disabled}))}));
+      result.notices=[...document.querySelectorAll('[role="alert"],.ant-message-notice,.tui-message,.tui-message-notice')].filter(visible).map(text).slice(0,10);
+      result.status = 'observed'; return result;
+    }
     if (options.allowWrite !== true) throw new Error('Write execution is not enabled');
-    const overlaySelector = ['lineType', 'widthMm'].includes(options.action) ? '.ant-modal,.ant-popover' : '.ant-modal,.ant-popover,.ant-select-dropdown';
+    const overlaySelector = options.action==='confirmSave'?'.ant-popover,.ant-select-dropdown':['lineType', 'widthMm'].includes(options.action) ? '.ant-modal,.ant-popover' : '.ant-modal,.ant-popover,.ant-select-dropdown';
     if (options.workflowAuthorized) {
       // Ant Select's closing transition can outlive the field readback.
       for (let attempt = 0; attempt < 10 && [...document.querySelectorAll('.ant-select-dropdown')].some(visible); attempt++) await wait(100);
     }
     if ([...document.querySelectorAll(overlaySelector)].some(visible)) throw new Error('Close existing overlays before writing');
     const button = label => {
-      const found = [...document.querySelectorAll('button')].filter(node => visible(node) && text(node) === label && !node.disabled);
+      const found = [...document.querySelectorAll('button')].filter(node => visible(node) && text(node).replace(/\s/g,'') === label.replace(/\s/g,'') && !node.disabled);
       if (found.length !== 1) throw new Error('Missing or ambiguous button: ' + label);
       return found[0];
     };
@@ -72,23 +85,42 @@ export async function lineStyleAction(options = {}) {
       result.visibleDialogs = [...document.querySelectorAll('[role="dialog"],.ant-modal')].filter(visible).map(node => ({ title: text(node.querySelector('.ant-modal-title')), inputCount: node.querySelectorAll('input').length }));
       return result;
     }
-    if (options.action === 'save') {
+    if (options.action === 'save' || options.action === 'confirmSave') {
       // A click is never promoted to saved:true or persistedReadback:true.
       if (!options.expectedRows || JSON.stringify(result.before) !== JSON.stringify(options.expectedRows)) throw new Error('Rows changed before save');
       const noticeSelector = '[role="alert"],.ant-message-notice,.tui-message,.tui-message-notice';
       const priorNotices = new Set([...document.querySelectorAll(noticeSelector)].filter(visible));
+      const confirmation=()=>{
+        const dialogs=[...document.querySelectorAll('[role="dialog"],.ant-modal')].filter(visible);
+        const smallest=dialogs.filter(n=>!dialogs.some(other=>other!==n&&n.contains(other)));
+        const prefix=('确认将基础配置'+options.expectedConfigName+'保存在'+options.expectedCustomerName).replace(/\s/g,'');
+        return smallest.length===1&&[prefix+'?',prefix+'？'].some(s=>text(smallest[0]).replace(/\s/g,'').startsWith(s))?smallest[0]:null;
+      };
       let successNotice = null;
       const examine = records => {
         for (const notice of [...document.querySelectorAll(noticeSelector)].filter(visible)) {
           const changed = records.some(record => notice.contains(record.target) || [...record.addedNodes || []].some(node => node === notice || node.contains?.(notice)));
           if ((!priorNotices.has(notice) || changed) && /保存成功|保存完成|已保存/.test(text(notice)) && !/失败|未保存|尚未保存/.test(text(notice))) successNotice = text(notice).slice(0, 180);
         }
+        const currentStatus=text(document.querySelector('[class*="TopBarRightComponent-configDesc"]'));
+        const oldTime=/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.exec(statusText)?.[0],newTime=/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.exec(currentStatus)?.[0];
+        const customer=/来自于\s*(.*?)\s+\d{4}-\d{2}-\d{2}/.exec(currentStatus)?.[1]?.trim();
+        if(oldTime&&newTime&&newTime>oldTime&&customer===options.expectedCustomerName){successNotice='配置保存时间已更新: '+newTime;result.saveStatusBefore=statusText;result.saveStatusAfter=currentStatus;}
       };
       const observer = typeof MutationObserver === 'function' ? new MutationObserver(examine) : null;
       observer?.observe(document.body, { subtree: true, childList: true, characterData: true });
       try {
-        button('保存').click(); result.executed = true; result.status = 'save-requested-unverified';
-        if (observer) for (let attempt = 0; attempt < 30 && !successNotice; attempt++) { await wait(100); examine([]); }
+        let submit;
+        if(options.action==='confirmSave'){
+          const dialog=confirmation();if(!dialog)throw Error('Bound save confirmation dialog was not observed');
+          const choices=[...dialog.querySelectorAll('button')].filter(n=>visible(n)&&!n.disabled&&text(n).replace(/\s/g,'')==='保存');
+          if(choices.length!==1)throw Error('Confirmation save button is ambiguous');submit=choices[0];
+        }else submit=button('保存');
+        submit.click(); result.executed = true; result.status = 'save-requested-unverified';
+        if (observer) for (let attempt = 0; attempt < 120 && !successNotice; attempt++) {
+          await wait(100);examine([]);
+          if(options.action==='save'&&confirmation()){result.saveConfirmationPending=true;break;}
+        }
       } finally { observer?.disconnect(); }
       result.saveAcknowledged = Boolean(successNotice);
       result.saveNotice = successNotice;
@@ -103,13 +135,14 @@ export async function lineStyleAction(options = {}) {
     const age = Date.now() - Date.parse(creation?.createdAt);
     const justCreated = (options.action === 'rename' || options.workflowAuthorized) && creation?.rowId === before.id && creation?.name === before.name &&
       creation?.configName === options.expectedConfigName && Number.isFinite(age) && age >= 0 && age <= 300000;
-    if (!before.name?.startsWith('MCP_TEST_') && !justCreated) throw new Error('Only test styles or a recorded newly created row can be edited');
+    if (!before.name?.startsWith('MCP_TEST_') && !justCreated && options.existingEditAuthorized !== true) throw new Error('Only test styles or an explicitly bound existing row can be edited');
     if (!options.expectedOriginal || ['name', 'lineType', 'color', 'widthMm', ...(options.workflowAuthorized ? ['scale'] : [])].some(key => before[key] !== options.expectedOriginal[key])) throw new Error('Original values changed');
     if (typeof options.value !== 'string' || !options.value.trim()) throw new Error('Explicit value required');
     const header = { rename: '线样式名称', scale: '线型比例', lineType: '线型', widthMm: '线宽(mm)', colorIndex: '颜色' }[options.action];
     const cell = [...row.querySelectorAll('td')][headers.indexOf(header)];
     if (!cell) throw new Error('Expected column is missing');
     if (options.action === 'rename' || options.action === 'scale') {
+      if(options.action==='scale'&&before.lineType==='CONTINUOUS')throw Error('CONTINUOUS scale is not editable');
       if (options.action === 'rename' && ((!options.workflowAuthorized && !options.value.startsWith('MCP_TEST_')) || options.value.length > 100)) throw new Error('Invalid style name');
       if (options.action === 'scale' && (!Number.isFinite(Number(options.value)) || Number(options.value) <= 0)) throw new Error('Invalid scale');
       if (rows().some(other => other !== row && snapshot(other).name === options.value)) throw new Error('Duplicate test name on current page');
@@ -124,10 +157,12 @@ export async function lineStyleAction(options = {}) {
       }
       if (inputs.length !== 1) throw new Error('Editable name input not observed');
       guard();
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(inputs[0], options.value);
+      result.inputMethod=await fill(inputs[0]);
       result.executed = true;
-      inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-      inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+      if(typeof KeyboardEvent==='function'){
+        inputs[0].dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));
+        inputs[0].dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));
+      }
       inputs[0].blur();
     } else if (options.action === 'colorIndex') {
       if (!/^\d+$/.test(options.value)) throw new Error('Only an explicit color index is supported; RGB editing is not verified');
@@ -147,22 +182,19 @@ export async function lineStyleAction(options = {}) {
         if (!panel) throw new Error('Color index panel did not open');
         const inputs = [...panel.querySelectorAll('input[class*="ColorIndexPicker-input"]')].filter(node => visible(node) && !node.disabled && !node.readOnly);
         if (inputs.length !== 1) throw new Error('Editable color index input not observed');
-        const input = inputs[0];
+        let input = inputs[0];
         for (const [attribute, compare] of [['min', (v, bound) => v >= bound], ['max', (v, bound) => v <= bound]]) {
           const bound = input.getAttribute(attribute) ?? input.getAttribute('aria-value' + attribute);
           if (bound !== null && bound !== '' && !compare(Number(options.value), Number(bound))) throw new Error('Color index exceeds the observed input range');
         }
         guard();
-        input.focus?.();
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, options.value);
-        result.executed = true;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-        if (typeof KeyboardEvent === 'function') {
-          input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-          input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-        }
-        const confirm = [...panel.querySelectorAll('button')].filter(n => visible(n) && !n.disabled && ['确定','确认','应用'].includes(text(n)));
+        input.focus?.();await wait(250);
+        const liveInputs=[...panel.querySelectorAll('input[class*="ColorIndexPicker-input"]')].filter(n=>visible(n)&&!n.disabled&&!n.readOnly);
+        if(liveInputs.length!==1)throw Error('Color input changed during focus');
+        input=liveInputs[0];
+        result.inputMethod=await fill(input);
+        result.executed=true;await wait(150);
+        const confirm = [...panel.querySelectorAll('button')].filter(n => visible(n) && !n.disabled && ['确定','确认','应用'].includes(text(n).replace(/\s/g,'')));
         if (confirm.length === 1) confirm[0].click();
         input.blur();
         await wait(150);
@@ -203,9 +235,13 @@ export async function lineStyleAction(options = {}) {
       if (candidates.length !== 1) throw new Error('Exact associated option must be opened and uniquely observed before selection');
       guard(); candidates[0].click(); result.executed = true;
     }
-    await wait(150); guard();
-    result.after = snapshot(row);
     const changedKey = options.action === 'rename' ? 'name' : options.action === 'colorIndex' ? 'color' : options.action;
+    for(let attempt=0;attempt<12;attempt++){
+      await wait(100);guard();
+      const fresh=rows().find(n=>n.getAttribute('data-row-key')===before.id);
+      result.after=snapshot(fresh||row);
+      if(result.after[changedKey]===options.value)break;
+    }
     if (result.after[changedKey] !== options.value || ['name', 'lineType', 'color', 'widthMm', ...(options.workflowAuthorized && options.action !== 'lineType' ? ['scale'] : [])].some(key => key !== changedKey && before[key] !== result.after[key])) throw new Error('UI readback mismatch');
     result.status = 'edited-ui-only';
   } catch (error) { result.status = result.executed ? 'stopped-review-required' : 'blocked'; result.error = error.message; }

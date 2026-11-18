@@ -1,37 +1,48 @@
 # 施工图配置 Agent
 
-## 当前源码：线样式 MCP
+独立项目：kujiale-drawing-agent。施工图 Skill、MCP、浏览器扩展、reference 和安装脚本全部集中在本仓库，不再依赖参数化建模仓库目录。
 
-通用工具 `drawing_create_line_draft` 已在真实页面完成“新建 → 名称、线型、颜色、线宽设置 → 独立回读”。这是未保存草稿能力；保存、发布和其他分类不能据此视为可用。
+## 从这里开始
 
-- [工具能力分组与参考入口](docs/mcp-capabilities.md)
-- [线样式新建操作](skills/kujiale-drawing-bridge/references/line-style-create.md)
-- [源码 HTTP 网关启动与 STDIO 主机接入](skills/kujiale-drawing-bridge/references/connection-http.md)
+- [Skill 入口](.agents/skills/kujiale-drawing-bridge/SKILL.md)
+- [完整验收流程](.agents/skills/kujiale-drawing-bridge/references/workflow.md)
+- [页面与接口参考](.agents/skills/kujiale-drawing-bridge/references/routes.md)
+- [MCP 工具说明](mcp/DESIGN.md)
+- [待更新内容](docs/pending-updates.md)
+- [迁移记录](docs/migration.md)
 
-当前浏览器源码默认连接 `127.0.0.1:8788` HTTP 网关，应按上面的源码入口启动；旧桌面管理器的原生消息链路不能验收此网关。本次仅更新源码和文档，不重打包或修改既有发行附件。以下 0.6.0 段落介绍原有发行预览版。
+## 目录
 
-
-独立项目，仅包含施工图 Skill、MCP、扩展、reference、安装脚本与本机桥接管理器。参数化模型、周报和搭建练习分别留在各自仓库。
-
-## 0.6.0：安装修复与统一连接检测
-
-下载 [Windows 运行包](https://github.com/zhu1335411399-spec/kujiale-drawing-agent/releases/tag/drawing-v0.6.0) 的 ZIP 附件，解压后运行 Start.cmd；首次安装成功后打开 DrawingBridgeManager.exe。首次构建完成后发行页才会出现附件，以 Actions 实际结果为准。
-
-管理器常驻托盘，统一显示 Chrome/Edge 宿主注册、扩展心跳、实际页面列表、本机服务和最近 MCP 调用。点击“修复接入”修复注册；失败会显示具体错误。首次仍需手动加载扩展、信任 AI 客户端项目和登录账号。
-
-0.5.0 历史发行包保持不变。0.6.0 是连接检测预览版，不是完整自动配置产品。保存、发布执行适配器未验证，其他前端业务自动操作尚未接通。
-
-## 文件分类
-
-| 目录 | 内容 |
+| 目录/文件 | 内容 |
 |---|---|
-| desktop | Windows 托盘界面、注册检查与构建脚本 |
-| mcp | MCP、统一心跳检测、服务、诊断及测试 |
-| browser-extension | Chrome/Edge 扩展与实时页面报告 |
-| .agents/skills、.claude/skills、skills | 同步的 Skill 入口及 references |
-| docs、examples | 流程、待办、来源及验证记录 |
-| Start.cmd、install.ps1、build.ps1 | 安装与打包入口 |
+| .agents/skills、.claude/skills | Codex / Claude 对应 Skill 镜像 |
+| skills | 安装包使用的同一份 Skill |
+| mcp | MCP 服务、工具、协议、诊断和测试 |
+| browser-extension | 浏览器扩展源码 |
+| docs、examples | 来源、变更、验证记录和验收计划 |
+| installer | 安装说明 |
+| Start.cmd、start.ps1 | 完整运行包的一键启动入口 |
+| install.ps1、build.ps1 | 安装、配置生成及打包 |
+| runtime/LICENSE | Node 官方许可证；二进制不进入源码仓库 |
 
-[管理器说明](desktop/README.md) · [Skill](.agents/skills/kujiale-drawing-bridge/SKILL.md) · [完整流程](.agents/skills/kujiale-drawing-bridge/references/workflow.md)
+## 版本与使用边界
 
-源码构建需要 Node.js 20+，完整发行包携带运行时。构建输出不会包含账号、令牌或客户数据。
+当前冻结发行基线为 0.5.0。本次只整理独立项目，保留原发行包、标签和校验文件，不重新发布。
+
+历史完整包仍在 [原仓库 0.5.0 发行页](https://github.com/zhu1335411399-spec/kujiale-model-agent/releases/tag/drawing-v0.5.0)。等独立仓库建立并验证完成后，再迁移发行附件；不能把源码 ZIP 当作含 Node 的运行包。
+
+当前源码包含页面读取、客户载入、前端头像核对、新建线样式草稿，以及线样式名称搜索、指定记录编辑与回执保存。操作流程及实际验收状态见 [能力分组](skills/kujiale-drawing-bridge/references/capabilities.md) 和 [线样式搜索编辑](skills/kujiale-drawing-bridge/references/line-style-edit.md)。通用 drawing_save_config / drawing_publish_config 仍为未执行入口；线样式回执保存不代表其他分类已支持。前端更新配置、自动标注、另存为、出图及恢复尚未自动接通。
+
+源码运行/打包需 Node.js 20+。完整运行包自带 Node；首次使用仍需用户加载扩展、信任 AI 客户端项目，并登录自己的账号。运行包不内置 AI 聊天软件或账号。
+
+## 开发检查
+
+```powershell
+node --test mcp/line-style-runtime.test.mjs mcp/line-style-actions.test.mjs mcp/trusted-line-input.test.mjs mcp/http-server.test.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+修改页面操作源码后运行 `node scripts/build-config-page-runtime.mjs` 生成扩展配置页适配文件；修改工作线程引用的模块后，在实际使用的浏览器重新加载扩展。运行测试或打包不代表已完成真实网页操作。
+
+GitHub 工作流保持手动触发，整理或修改参考资料不会自动发布新包。
+
