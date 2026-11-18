@@ -19,6 +19,7 @@ export function readDrawingPage(options = {}) {
     configOwnerId: null
   };
   const result = {
+    navigationLabels: [...new Set([...document.querySelectorAll('a,button,span,div,li')].filter(visible).map(n => (n.innerText || n.textContent || '').trim()).filter(t => ['企业设置','基础配置','基础设置','样式配置','对象配置','注释配置'].includes(t)))],
     url: cleanUrl, title: document.title, role: isConfig ? 'config' : 'design',
     readAt: new Date().toISOString(), identity,
     evidence: {

@@ -11,7 +11,11 @@ body{width:410px;margin:18px;font:14px system-ui,sans-serif;color:#243047}h2{fon
 <section><h3>本浏览器：前端设计器页面</h3><div id="design"></div></section>
 <p id="status" role="status">正在检测…</p>
 <button id="refresh">重新检测页面</button>
+<details><summary>开发诊断（按需展开）</summary>
+<section><h3>线样式候选项采集 · 修正2</h3><p class="detail">展开并滚动第一行的线型、线宽下拉框，不选择、不保存。采集期间请勿操作配置页。颜色另行适配。</p><button id="reloadOptionsExtension">应用采集更新（重载扩展）</button><p><button id="collectOptions">只读采集候选项</button></p><p id="optionsStatus" role="status"></p></section>
 <p class="detail">Chrome 后端和 Edge 前端请分别在各自扩展中查看；Agent 可汇总两个浏览器。设计器可访问不代表已进入“图纸&amp;清单”，账号、客户配置、模板及验收结果另行核验。</p>
+<section><h3>颜色面板只读探测 · 1</h3><p class="detail">只打开当前颜色，读取面板结构后关闭，不选颜色。请勿同时操作配置页。</p><button id="collectColor">只读探测颜色面板</button><p id="colorStatus" role="status"></p></section>
+</details>
 <section><h3>本机服务连接（独立状态）</h3><p id="mcpStatus" role="status"></p><button id="connect">重新连接</button> <button id="disconnect">暂停</button><p id="mcpDetail" class="detail"></p></section>
 <script type="module" src="popup.js"></script>
 <script type="module" src="native-status.js"></script>

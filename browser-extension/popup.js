@@ -1,4 +1,32 @@
 const refresh = document.getElementById('refresh');
+const collectOptions = document.getElementById('collectOptions');
+document.getElementById('reloadOptionsExtension').addEventListener('click', () => chrome.runtime.reload());
+const collectColor = document.getElementById('collectColor');
+collectColor.addEventListener('click', async () => {
+  collectColor.disabled = true;
+  collectOptions.disabled = true;
+  const label = document.getElementById('colorStatus');
+  label.textContent = '正在打开并读取颜色面板，不选择颜色…';
+  try {
+    const result = await chrome.runtime.sendMessage({ type: 'collectLineColor' });
+    if (result?.error || !result?.readerBuild) throw new Error(result?.error || '请先应用采集更新');
+    label.textContent = result.readerBuild + '；状态：' + result.status + '；面板 ' + result.panelCount + '；已渲染色块 ' + result.swatchCount +
+      '；已关闭：' + result.closed + '；原值一致：' + result.valuesUnchanged + '。请在 5 分钟内运行普通只读验证程序。';
+  } catch (error) { label.textContent = '颜色探测失败：' + error.message; }
+  finally { collectColor.disabled = false; collectOptions.disabled = false; }
+});
+collectOptions.addEventListener('click', async () => {
+  collectOptions.disabled = true;
+  const label = document.getElementById('optionsStatus');
+  label.textContent = '正在展开、滚动读取候选项，请勿操作配置页…';
+  try {
+    const result = await chrome.runtime.sendMessage({ type: 'collectLineOptions' });
+    if (result?.error || !result?.fields) throw new Error(result?.error || '扩展尚未重新加载');
+    label.textContent = (result.readerBuild || '旧采集程序：请应用采集更新') + '；' + result.fields.map(field => field.field + '：' + field.count + ' 项（' + field.status + '）').join('；') +
+      (result.valuesUnchanged ? '。表格原值核对一致，请在 5 分钟内运行只读验证程序。' : '。原值一致性未通过，请停止操作并检查页面。');
+  } catch (error) { label.textContent = '采集失败：' + error.message; }
+  finally { collectOptions.disabled = false; }
+});
 const status = document.getElementById('status');
 let sequence = 0;
 let timer;

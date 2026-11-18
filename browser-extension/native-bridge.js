@@ -1,5 +1,16 @@
 import { pageRole } from './pages.js';
+import { readDrawingApi } from './read-api.js';
+import { readEncryptedConfig } from './read-encrypted-config.js';
+import { createLineWorkflow } from './create-line-workflow.js';
+import { createCaptureStore } from './capture-store.js';
+import { newLineOnly } from './new-line-only.js';
+import { createLineDraft } from './create-line-draft.js';
 import { readDrawingPage } from './read-page.js';
+import { inspectLineStyleControls } from './inspect-controls.js?build=color-structure-2';
+import { readLineStyleOptions } from './read-options.js?build=options-close-fix-2';
+import { readLineColorPanel } from './read-color.js?build=color-panel-probe-1';
+import { readConfigStructure } from './read-structure.js?build=config-structure-1';
+import { createTestLineStyle } from './create-line-style.js';
 import { collectPages, browserProfileScope } from './page-check.js';
 
 const hostName = 'com.kujiale.construction_drawing';
@@ -8,6 +19,7 @@ const sites = ['https://www.kujiale.com/*', 'https://beta.kujiale.com/*', 'https
 const instanceId = crypto.randomUUID();
 let port, polling = false, sequence = 0, generation = 0;
 const pending = new Map();
+const captureStore = createCaptureStore(chrome);
 
 function openPort() {
   if (port) return port;
@@ -30,7 +42,17 @@ function openPort() {
   return opened;
 }
 
-function post(route, input) {
+async function post(route, input) {
+  const response = await fetch('http://127.0.0.1:8788/bridge', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...input, route, instanceId }), signal: AbortSignal.timeout(10000)
+  });
+  const value = await response.json();
+  if (!response.ok || value.error) throw new Error(value.error || 'HTTP bridge failed');
+  return value;
+}
+
+function postNativeLegacy(route, input) {
   return new Promise((resolve, reject) => {
     const id = ++sequence;
     const timer = setTimeout(() => { pending.delete(id); reject(new Error('本机桥接响应超时')); }, 10000);
@@ -48,13 +70,118 @@ async function readTab(tabId, kind, options = {}) {
     target: { tabId }, func: readDrawingPage,
     args: [{ kind, name: options.name, offset: options.offset, limit: options.limit }]
   });
+  if (kind === 'config' && probe?.result?.role === 'config') {
+    const [structure] = await chrome.scripting.executeScript({ target: { tabId }, func: readConfigStructure });
+    if (structure?.result) probe.result.pageStructure = structure.result;
+    const [inspection] = await chrome.scripting.executeScript({ target: { tabId }, func: inspectLineStyleControls });
+    if (inspection?.result) probe.result.controlInspection = inspection.result;
+    const cacheKey = 'lineOptions:' + tabId;
+    const saved = (await chrome.storage.session.get(cacheKey))[cacheKey];
+    if (saved && Date.now() - saved.cachedAt < 300000 && saved.report.url === probe.result.url &&
+        saved.report.sourceConfigText === probe.result.identity?.configStatusText) probe.result.optionInspection = saved.report;
+    const colorKey = 'lineColor:' + tabId;
+    const colorSaved = (await chrome.storage.session.get(colorKey))[colorKey];
+    if (colorSaved && Date.now() - colorSaved.cachedAt < 300000 && colorSaved.report.url === probe.result.url &&
+        colorSaved.report.sourceConfigText === probe.result.identity?.configStatusText) probe.result.colorInspection = colorSaved.report;
+  }
   const current = await chrome.tabs.get(tabId);
   if (current.url !== tab.url || pageRole(current.url) !== role) throw new Error('页面已关闭或跳转，请重新读取上下文');
   if (!probe?.result || pageRole(probe.result.url) !== role) throw new Error('页面读取失败或已跳转');
   return { tabId, ...probe.result };
 }
 
-async function perform(task) {
+export async function collectLineColor() {
+  if (collectingOptions) throw new Error('A collection is already running.');
+  collectingOptions = true;
+  try {
+    const tabs = (await chrome.tabs.query({ url: sites })).filter(tab => pageRole(tab.url) === 'config' && /\/config\/style\/?$/.test(new URL(tab.url).pathname));
+    if (tabs.length !== 1) throw new Error('Keep exactly one line-style configuration page open.');
+    const tab = tabs[0];
+    const key = 'lineColor:' + tab.id;
+    await chrome.storage.session.remove(key);
+    const [probe] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readLineColorPanel });
+    if ((await chrome.tabs.get(tab.id)).url !== tab.url || !probe?.result) throw new Error('Page changed or probe failed.');
+    const report = probe.result;
+    await chrome.storage.session.set({ [key]: { cachedAt: Date.now(), report } });
+    return { readerBuild: report.readerBuild, status: report.status, error: report.error,
+      closed: report.closed, valuesUnchanged: report.valuesUnchanged, panelCount: report.panels.length,
+      swatchCount: report.panels.reduce((sum, panel) => sum + panel.renderedSwatches.length, 0) };
+  } finally { collectingOptions = false; }
+}
+
+let collectingOptions = false;
+export async function collectLineOptions() {
+  if (collectingOptions) throw new Error('Option collection is already running.');
+  collectingOptions = true;
+  try {
+    const tabs = (await chrome.tabs.query({ url: sites })).filter(tab => pageRole(tab.url) === 'config' && /\/config\/style\/?$/.test(new URL(tab.url).pathname));
+    if (tabs.length !== 1) throw new Error('Keep exactly one line-style configuration page open in this browser.');
+    const tab = tabs[0];
+    await chrome.storage.session.remove('lineOptions:' + tab.id);
+    const [probe] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readLineStyleOptions });
+    const current = await chrome.tabs.get(tab.id);
+    if (current.url !== tab.url || !probe?.result) throw new Error('Page changed or collection failed.');
+    const report = probe.result;
+    await chrome.storage.session.set({ ['lineOptions:' + tab.id]: { cachedAt: Date.now(), report } });
+    return { readerBuild: report.readerBuild, status: report.status, valuesUnchanged: report.valuesUnchanged,
+      fields: report.fields.map(field => ({ field: field.field, status: field.status, count: field.options?.length || 0, complete: field.complete })) };
+  } finally { collectingOptions = false; }
+}
+
+export async function perform(task) {
+  if (task.operation === 'create-line-draft') {
+    if (collectingOptions) throw new Error('Another operation is running');
+    collectingOptions = true;
+    try { return await createLineDraft({ chromeApi: chrome, tabId: task.args.tabId, args: task.args }); }
+    finally { collectingOptions = false; }
+  }
+  if (task.operation === 'new-line-only') {
+    if (collectingOptions) throw new Error('Another operation is running');
+    collectingOptions = true;
+    try {
+      const tab = await chrome.tabs.get(task.args.tabId);
+      if (pageRole(tab.url) !== 'config') throw new Error('Not a configuration page');
+      const [probe] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: newLineOnly, args: [task.args] });
+      if (!probe?.result) throw new Error('No result; do not retry');
+      return probe.result;
+    } finally { collectingOptions = false; }
+  }
+  if (task.operation === 'capture-api') {
+    return captureStore.action(task.args.tabId, task.args.action);
+  }
+  if (task.operation === 'create-line-workflow') {
+    if (collectingOptions) throw new Error('Another browser operation is running');
+    collectingOptions = true;
+    try { return await createLineWorkflow({ chromeApi: chrome, tabId: task.args.tabId, args: task.args }); }
+    finally { collectingOptions = false; }
+  }
+  if (task.operation === 'api-read') {
+    const tab = await chrome.tabs.get(task.args.tabId);
+    if (pageRole(tab.url) !== 'config') throw new Error('Target must be a configuration page');
+    const [probe] = task.args.resource === 'full-config'
+      ? await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: readEncryptedConfig })
+      : await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readDrawingApi, args: [task.args] });
+    if (task.args.resource === 'full-config' && probe?.result?.error === 'Page common package unavailable') {
+      const frames = await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, world: 'MAIN', func: () => {
+        const registry = window.pubCmnPackages;
+        const pkg = registry?.['@qunhe/tools-common'];
+        return { origin: location.origin, path: location.pathname,
+          hasSession: !!window.g_sessionAccount, registryType: typeof registry,
+          commonPackageType: typeof pkg, hasModuleKeys: typeof pkg?.keys === 'function',
+          moduleKeys: typeof pkg?.keys === 'function' ? pkg.keys().filter(key => /http/i.test(key)).slice(0, 20) : [],
+          isTopFrame: window === window.top };
+      } });
+      probe.result.frameDiagnostics = frames.map(frame => ({ frameId: frame.frameId, ...frame.result }));
+    }
+    if ((await chrome.tabs.get(tab.id)).url !== tab.url || !probe?.result) throw new Error('Page changed or API read failed');
+    return probe.result;
+  }
+  if (task.operation === 'create-line-style') {
+    if (collectingOptions) throw new Error('Another browser operation is running');
+    collectingOptions = true;
+    try { return await createTestLineStyle({ chromeApi: chrome, tabId: task.args.tabId, args: task.args }); }
+    finally { collectingOptions = false; }
+  }
   if (task.operation === 'context') {
     const tabs = (await chrome.tabs.query({ url: sites })).filter(tab => pageRole(tab.url));
     const pages = await Promise.all(tabs.map(async tab => {
@@ -75,7 +202,7 @@ async function perform(task) {
 export async function bridgeStatus() {
   const { bridgeEnabled } = await chrome.storage.local.get('bridgeEnabled');
   const { bridgeStatus } = await chrome.storage.session.get('bridgeStatus');
-  return { enabled: bridgeEnabled !== false, transport: 'native-messaging', ...bridgeStatus };
+  return { enabled: bridgeEnabled !== false, ...bridgeStatus, transport: 'http-localhost', endpoint: 'http://127.0.0.1:8788/mcp' };
 }
 
 export async function connectBridge() {

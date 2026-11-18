@@ -1,5 +1,16 @@
 # 施工图配置 Agent
 
+## 当前源码：线样式 MCP
+
+通用工具 `drawing_create_line_draft` 已在真实页面完成“新建 → 名称、线型、颜色、线宽设置 → 独立回读”。这是未保存草稿能力；保存、发布和其他分类不能据此视为可用。
+
+- [工具能力分组与参考入口](docs/mcp-capabilities.md)
+- [线样式新建操作](skills/kujiale-drawing-bridge/references/line-style-create.md)
+- [源码 HTTP 网关启动与 STDIO 主机接入](skills/kujiale-drawing-bridge/references/connection-http.md)
+
+当前浏览器源码默认连接 `127.0.0.1:8788` HTTP 网关，应按上面的源码入口启动；旧桌面管理器的原生消息链路不能验收此网关。本次仅更新源码和文档，不重打包或修改既有发行附件。以下 0.6.0 段落介绍原有发行预览版。
+
+
 独立项目，仅包含施工图 Skill、MCP、扩展、reference、安装脚本与本机桥接管理器。参数化模型、周报和搭建练习分别留在各自仓库。
 
 ## 0.6.0：安装修复与统一连接检测

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "construction_drawing": {
+      "command": "node",
+      "args": ["C:/path/to/kujiale-drawing-agent/mcp/http-client-stdio.mjs"]
+    }
+  }
+}

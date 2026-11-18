@@ -4,6 +4,57 @@ const writeTarget = {
 };
 
 export const tools = [
+  { name: 'drawing_create_line_draft', description: '通用新建线样式草稿：在已打开的线样式页创建一行，按参数设置名称、线型、CAD颜色索引、线宽，再回读所有字段。复用网页操作，无须网站HTTP接口。线型比例保留网页默认值。不会保存、发布或刷新。先用 drawing_get_context 核对 pageId、配置名称和来自于标签。重名检查仅覆盖当前网页分页；失败可能留下部分修改。requestId 每项新任务唯一，恢复同一任务时不得改变参数。成功返回 status=draft-fields-verified、style 和 saved=false。',
+    annotations: { readOnlyHint:false, destructiveHint:false, idempotentHint:false, openWorldHint:true },
+    inputSchema: {type:'object',additionalProperties:false,
+      properties: {
+        pageId:{type:'string',minLength:1,maxLength:120,description:'drawing_get_context 返回的目标配置页面标识'},
+        requestId:{type:'string',minLength:8,maxLength:100,description:'本次任务唯一ID，限英文字母、数字、下划线及连字符；恢复本次任务必须用相同参数'},
+        expectedConfigName:{type:'string',minLength:1,maxLength:200,description:'当前选中的基础配置名称，必须精确匹配'},
+        expectedCustomerName:{type:'string',minLength:1,maxLength:200,description:'右上角来自于后的完整显示标签，例如客户名称或你的账号；不能当作真实账号ID'},
+        name:{type:'string',minLength:1,maxLength:100,description:'新线样式名称'},
+        lineType:{type:'string',minLength:1,maxLength:100,description:'网页下拉选项中的准确名称，例如CONTINUOUS、DOT、DASHED；未找到对应选项时停止'},
+        colorIndex:{type:'string',minLength:1,maxLength:3,description:'CAD颜色索引0至255，例如255；不接受RGB字符串'},
+        widthMm:{type:'string',minLength:1,maxLength:20,description:'网页线宽下拉选项中的毫米数值，例如0.09、0.13；未找到对应选项时停止'}
+      },
+      required:['pageId','requestId','expectedConfigName','expectedCustomerName','name','lineType','colorIndex','widthMm']} },
+  { name: 'drawing_new_line_style', description: 'Click New Style once on the current line-style page and return its generated name. Does not edit or save. Reuse requestId after uncertain outcomes.',
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    inputSchema: { type: 'object', additionalProperties: false,
+      properties: Object.fromEntries(['pageId','requestId','expectedStatus'].map(k => [k,{ type:'string',minLength:1,maxLength:300 }])),
+      required: ['pageId','requestId','expectedStatus'] } },
+  { name: 'drawing_capture_api', description: 'Start/stop/read bounded passive network capture. Records survive page refresh and worker restart in extension session storage; browser restart or extension reload clears them. Requires debugger permission; opening DevTools may detach. Never replays; encoded responses remain unparsed.',
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    inputSchema: { type: 'object', additionalProperties: false, properties: {
+      pageId: { type: 'string', minLength: 1, maxLength: 120 }, action: { type: 'string', enum: ['start', 'stop', 'read', 'clear'], maxLength: 10 }
+    }, required: ['pageId', 'action'] } },
+  {
+    name: 'drawing_create_line_style_and_save',
+    description: 'Create one line style, set all five fields, save and reload to verify. DOM adapter, not a verified HTTP API. Requires loaded customer and all rows on page 1. Never publishes. Do not repeat an uncertain request.',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    inputSchema: { type: 'object', additionalProperties: false,
+      properties: Object.fromEntries(['pageId', 'requestId', 'expectedConfigName', 'expectedCustomerName', 'name', 'lineType', 'scale', 'colorIndex', 'widthMm'].map(key => [key, { type: 'string', minLength: 1, maxLength: 200 }])),
+      required: ['pageId', 'requestId', 'expectedConfigName', 'expectedCustomerName', 'name', 'lineType', 'scale', 'colorIndex', 'widthMm'] }
+  },
+  {
+    name: 'drawing_read_api',
+    description: 'Read a fixed drawing API resource using the selected browser login. observed-requests lists current resource paths/query keys only; templates requests the template list. Business response structure is not yet live verified. No arbitrary URL, save or publish.',
+    annotations: { readOnlyHint: true, openWorldHint: true },
+    inputSchema: { type: 'object', additionalProperties: false,
+      properties: { pageId: { type: 'string', minLength: 1, maxLength: 120 }, resource: { type: 'string', enum: ['observed-requests', 'templates', 'full-config'], maxLength: 30 } },
+      required: ['pageId', 'resource'] }
+  },
+  {
+    name: 'drawing_create_line_style',
+    description: '仅在用户指定的 MCP样式引用 测试配置中创建一个 MCP_TEST_ 命名的测试线样式，保留页面默认属性，尝试保存并重载回读。不激活、不发布。失败可能已有新建或未保存修改，不得盲目重试。当前适配器待真实页面验收。',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    inputSchema: { type: 'object', additionalProperties: false,
+      properties: { pageId: { type: 'string', minLength: 1, maxLength: 120 },
+        expectedConfigName: { type: 'string', minLength: 1, maxLength: 100 },
+        expectedCustomerName: { type: 'string', minLength: 1, maxLength: 200 },
+        name: { type: 'string', minLength: 10, maxLength: 89 } },
+      required: ['pageId', 'expectedConfigName', 'expectedCustomerName', 'name'] }
+  },
   {
     name: 'drawing_get_context',
     description: '只读列出已连接浏览器配置页与设计页，返回页面标识、显示名称、已选基础配置及来源证据。多个配置页时必须选定 pageId。',
@@ -55,11 +106,17 @@ export function validateCall(name, value = {}) {
   if (!tool) throw new Error('Unknown tool');
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Arguments must be an object');
   const schema = tool.inputSchema;
+  if (name === 'drawing_create_line_draft' && (!/^[A-Za-z0-9_-]{8,100}$/.test(value.requestId || '') ||
+      !value.name?.trim() || !/^[A-Z0-9_]+$/.test(value.lineType || '') ||
+      !/^\d+$/.test(value.colorIndex || '') || Number(value.colorIndex) > 255 ||
+      !/^\d+(\.\d+)?$/.test(value.widthMm || '') || Number(value.widthMm) <= 0)) throw new Error('Invalid line-style draft parameters');
+  if (name === 'drawing_create_line_style' && (!value.expectedConfigName?.startsWith('MCP样式引用') || !/^MCP_TEST_[A-Za-z0-9_-]{1,80}$/.test(value.name || ''))) throw new Error('Only an explicitly named test configuration and MCP_TEST_ style may be created');
   for (const key of Object.keys(value)) if (!(key in schema.properties)) throw new Error('Unknown argument: ' + key);
   for (const key of schema.required || []) if (!(key in value)) throw new Error('Missing argument: ' + key);
   for (const [key, field] of Object.entries(schema.properties)) {
     const input = value[key];
     if (input === undefined) continue;
+    if (field.enum && !field.enum.includes(input)) throw new Error('Invalid argument: ' + key);
     if (field.type === 'string' && (typeof input !== 'string' || input.length < (field.minLength || 0) || input.length > field.maxLength)) throw new Error('Invalid argument: ' + key);
     if (field.type === 'integer' && (!Number.isInteger(input) || input < field.minimum || input > field.maximum)) throw new Error('Invalid argument: ' + key);
   }
