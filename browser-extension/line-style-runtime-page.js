@@ -15,6 +15,13 @@ globalThis.__drawingLineStyleRuntime=async function(options){
   const same=(a,b)=>!!a&&!!b&&fields.every(k=>(a[k]??'')===(b[k]??''));
   const canonical=rows=>JSON.stringify([...rows].sort((a,b)=>a.id.localeCompare(b.id)).map(r=>fields.map(k=>r[k]??'')));
   const prepare=async()=>{
+    if(/\/config\/object\/?$/.test(location.pathname)){
+      const source=text(document.querySelector('[class*="TopBarRightComponent-configDesc"]')),customer=/来自于\s*(.*?)\s+\d{4}-\d{2}-\d{2}/.exec(source)?.[1]?.trim();
+      const selects=[...document.querySelectorAll('.ant-select')].filter(n=>visible(n)&&!n.closest('table,.ant-drawer,.ant-pagination'));
+      if(customer!==options.expectedCustomerName||!selects.some(n=>(n.querySelector('.ant-select-selection-item')?.getAttribute('title')||text(n.querySelector('.ant-select-selection-item')))===options.expectedConfigName)||[...document.querySelectorAll('.ant-modal,.ant-drawer-content')].some(visible))throw Error('Cannot navigate an unconfirmed customer/configuration or open editor');
+      const links=[...document.querySelectorAll('a[href]')].filter(n=>visible(n)&&text(n)==='样式配置'&&new URL(n.href,location.href).origin===location.origin&&new URL(n.href,location.href).pathname==='/pub/saas/workbench/construction/drawing_config/config/style');
+      if(links.length!==1)throw Error('Unique observed style navigation required');links[0].click();result.viewChanged=true;await wait(700);
+    }
     try{const observed=await action({action:'inspect'});if(observed.dialogs?.length){Object.assign(result,{dialogs:observed.dialogs,notices:observed.notices});throw Error('An existing dialog requires review before searching or editing');}return observed;}
     catch(error){
       if(error.report?.error!=='Line-style table not found')throw error;
@@ -170,6 +177,7 @@ globalThis.__drawingLineStyleRuntime=async function(options){
     const fresh=await search(record.style.name);const matches=fresh.styles.filter(r=>r.id===record.style.id&&same(r,record.style));
     if(!fresh.complete||matches.length!==1)throw Error('Fresh-page style readback does not match the saved edit');
     store({...record,phase:'saved'});
+    if(globalThis.chrome?.storage?.local){try{const local=await chrome.storage.local.get(null);const acknowledgements={};for(const [key,value] of Object.entries(local))if(key.startsWith('line-draft:')&&value?.created===true&&!value.saved&&value.style?.id===matches[0].id&&['draft-fields-verified','needs-review'].includes(value.status))acknowledgements[key]={...value,status:'saved-after-bound-edit',style:matches[0],saved:true,persistedReadback:true,savedByReceipt:options.receiptId,target:bound,error:undefined};if(Object.keys(acknowledgements).length)await chrome.storage.local.set(acknowledgements);result.draftReconciliation='checked-after-persisted-readback';}catch{result.draftReconciliation='unavailable';}}
     return{...result,status:'save-and-reload-readback-verified',saved:true,persistedReadback:true,serverApiVerified:false,receiptId:options.receiptId,style:matches[0],saveNotice:record.saveNotice,persistenceEvidence:'fresh save notice or updated save time, then page reload and bound customer readback; independent server API not verified'};
   }catch(error){return{...result,status:result.executed?'needs-review':'blocked',error:error.message,...(error.report?.after?{actualStyle:error.report.after}:{}),...(error.report?.colorPanelInspection?{colorPanelInspection:error.report.colorPanelInspection}:{})};}
 };

@@ -105,3 +105,12 @@ test('checked-in configuration bundle includes the current source adapters',()=>
   const bundle=fs.readFileSync(new URL('../browser-extension/customer-load-page.js',import.meta.url),'utf8');assert.ok(bundle.endsWith(code));
   const action=fs.readFileSync(new URL('../browser-extension/line-style-actions.js',import.meta.url),'utf8').replace('export async function lineStyleAction(options = {}) {','globalThis.__drawingLineStyleAction = async function(options = {}) {');assert.ok(bundle.includes(action));
 });
+
+test('only a matching created draft is acknowledged after saved edit readback',async()=>{
+ const f=fixture(),drafts={'line-draft:fixture_new_01':{created:true,saved:false,status:'needs-review',style:{...f.rows()[1]}},'line-draft:fixture_other_01':{created:true,saved:false,status:'draft-fields-verified',style:{...f.rows()[0]}}};
+ f.sandbox.chrome={storage:{local:{get:async()=>drafts,set:async values=>Object.assign(drafts,values)}}};
+ const edit=await f.run({configurationTask:'update',requestId:'fixture_draft_edit_01',expectedStyle:{...f.rows()[1]},changes:{widthMm:'0.50'}});
+ assert.equal(drafts['line-draft:fixture_new_01'].saved,false);
+ await f.run({configurationTask:'save',receiptId:edit.receiptId});assert.equal(drafts['line-draft:fixture_new_01'].saved,false);
+ const r=await f.run({configurationTask:'verify',receiptId:edit.receiptId});assert.equal(r.persistedReadback,true);assert.equal(drafts['line-draft:fixture_new_01'].saved,true);assert.equal(drafts['line-draft:fixture_new_01'].style.widthMm,'0.50');assert.equal(drafts['line-draft:fixture_other_01'].saved,false);
+});

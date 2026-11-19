@@ -35,6 +35,9 @@ export function createProtocol(broker) {
           catch (error) { return fail(-32602, error.message); }
           try {
             const name = request.params.name;
+            if(name==='drawing_sync_frontend_configuration'){
+              const value=await broker.page(args.pageId,'frontend-identity',{...args,syncTask:args.action,action:'hover',frameId:0,cacheResult:false});result={...(!['frontend-sync-inspected','frontend-config-update-observed','frontend-sync-unconfirmed'].includes(value.status)?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(value)}]};break;
+            }
             if(name==='drawing_frontend_navigation'){
               const value=await broker.page(args.pageId,'frontend-identity',{...args,navigationTask:args.action,action:'hover',frameId:0,drawingTask:'inspect',cacheResult:false});result={...((value.status!=='frontend-navigation-observed'||value.navigationOutcome!=='observed')?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(value)}]};break;
             }
