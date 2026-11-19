@@ -9,6 +9,7 @@
 | 指定对象属性编辑 | drawing_update_object_properties | 三属性原值、继承模式、真分类 ID 绑定 |
 | 对象线样式引用替换 | drawing_replace_object_line_style | 浅深主题、原单元格、完整候选分页与唯一名称 |
 | 对象回执保存 | drawing_save_object_config | 客户确认、保存时间更新、刷新并重载原客户回读 |
+| 前端固定入口导航 | drawing_frontend_navigation | 仅打开图纸菜单、施工图工作区和设置；不切换模板或更新配置 |
 | 前端图纸结构只读识别 | drawing_inspect_frontend_drawing | 不能代替账号、模板或生效验收 |
 | 当前页线样式读取 | drawing_list_line_styles | [线样式合同](line-styles.md) |
 | 四类注释与配色只读识别 | drawing_inspect_style_settings | [分类字段与规则](annotation-styles.md) |

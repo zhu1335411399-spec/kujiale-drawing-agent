@@ -3,6 +3,8 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
   const text=n=>(n?.innerText||n?.textContent||'').trim().replace(/\s+/g,' ');
   const clean=s=>(s||'').trim().replace(/\s+/g,' ');
   const visible=n=>{if(!n?.getClientRects().length)return false;const r=n.getBoundingClientRect();if(r.width<=0||r.height<=0||r.x+r.width<=0||r.y+r.height<=0||r.x>=innerWidth||(typeof innerHeight==='number'&&r.y>=innerHeight))return false;for(let p=n;p&&p!==document.body;p=p.parentElement){const s=getComputedStyle(p);if(s.visibility==='hidden'||s.display==='none'||s.opacity==='0')return false;}return true;};
+  const exposed=n=>{if(!visible(n))return false;if(typeof document.elementFromPoint!=='function')return true;const r=n.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return!!top&&(top===n||n.contains(top)||(top!==document.body&&top!==document.documentElement&&top.contains(n)));};
+  const workspace=()=>{const controls=[...document.querySelectorAll('[id="drawings-edit-views"],[id="drawings-generate-sheets"]')].filter(visible),selected=controls.filter(n=>exposed(n)&&n.classList.contains('selected'));return{stage:selected.length===1?(selected[0].id==='drawings-generate-sheets'?'drawing-layout':'drawing-editor'):controls.length?'drawing-unconfirmed':'design',drawingOpen:controls.length>0,templateVerified:false,configurationUpdated:false,effectVerified:false};};
   const browser=navigator.userAgent.includes('Edg/')?'Edge':navigator.userAgent.includes('Chrome/')?'Chrome':'unknown';
   const result={readerBuild:'frontend-identity-5',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
     status:'identity-unconfirmed',companyDisplayName:null,visibleAccountId:null,displayNameMatch:null,identityVerified:false,saved:false,published:false,evidence:[]};
@@ -28,13 +30,41 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
       location.protocol!=='https:'||location.port)throw Error('Not a supported design origin');
     if(!['inspect','hover'].includes(options.action))throw Error('Invalid identity-read action');
     if(browser!==options.expectedBrowser)throw Error('Connected browser family does not match the selected browser');
-    const edit=document.getElementById?.('drawings-edit-views'),layout=document.getElementById?.('drawings-generate-sheets');
-    const drawingOpen=visible(edit)||visible(layout),stage=drawingOpen?(visible(layout)&&layout.classList.contains('selected')?'drawing-layout':'drawing-editor'):'design';
-    result.workspace={stage,drawingOpen,templateVerified:false,configurationUpdated:false,effectVerified:false};
+    result.workspace=workspace();
+    if(options.navigationTask){
+      const proof=globalThis.__drawingAccountDisplayProof;
+      if(!proof||!Number.isFinite(proof.documentEpoch)||proof.url!==location.href||proof.documentEpoch!==globalThis.performance?.timeOrigin||proof.companyDisplayName!==clean(options.expectedCompanyName)||!Number.isFinite(proof.checkedAt)||proof.checkedAt>Date.now()||document.title!==options.expectedTitle)throw Error('Refresh and confirm the displayed account and current design before navigation');
+      result.accountEvidence={companyDisplayName:proof.companyDisplayName,checkedAt:new Date(proof.checkedAt).toISOString(),sameDocument:true,stale:Date.now()-proof.checkedAt>30000,scope:'navigation-only'};
+      if(!['open-drawing-menu','open-drawing-workspace','open-settings'].includes(options.navigationTask))throw Error('Unsupported frontend navigation');
+      const label=options.navigationTask==='open-drawing-menu'?'图纸&清单':options.navigationTask==='open-settings'?'设置':'施工图纸';
+      const labels=()=>[...document.querySelectorAll('span,div,a,button,[role="menuitem"]')].filter(exposed).map(text);
+      const reached=()=>options.navigationTask==='open-drawing-menu'?labels().includes('施工图纸'):options.navigationTask==='open-settings'?labels().includes('切换施工图模板')&&labels().some(t=>/^更新配置(?:\s|$)/.test(t)):workspace().drawingOpen;
+      result.navigationExecuted=false;
+      if(!reached()){
+      const all=[...document.querySelectorAll('span,div,a,button,[role="menuitem"]')].filter(exposed).filter(n=>text(n)===label);
+      const matches=all.filter(n=>!all.some(x=>x!==n&&n.contains(x)));
+      if(matches.length!==1)throw Error('Observed frontend entry is missing or ambiguous: '+label);
+      const leaf=matches[0],drop=options.navigationTask==='open-settings'?leaf.closest('.tuipro-secondary-toolbar-icon-wrapper')?.querySelector('.tuipro-secondary-toolbar-icon-drop'):null;
+      const node=drop&&exposed(drop)?drop:leaf,r=node.getBoundingClientRect();
+      for(let p=node,i=0;p&&i<3;p=p.parentElement,i++){for(const type of ['mouseover','mouseenter'])p.dispatchEvent(new MouseEvent(type,{bubbles:type==='mouseover',clientX:r.x+r.width/2,clientY:r.y+r.height/2,view:window}));}
+      await new Promise(r=>setTimeout(r,250));
+      for(const type of ['mousedown','mouseup'])node.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,view:window}));
+      node.click();result.navigationExecuted=true;result.navigationTask=options.navigationTask;await new Promise(r=>setTimeout(r,800));
+      }
+      if(location.href!==proof.url)throw Error('Frontend navigation changed the URL; re-read the page context');
+      result.navigationTask=options.navigationTask;
+      result.navigationOutcome=reached()?'observed':'unconfirmed';
+    }
     if(options.drawingTask==='inspect'){
       const n=s=>[...document.querySelectorAll(s)].filter(visible);
+      result.workspace=workspace();
       const iconEvidence=n('i,svg').filter(x=>/back|return|close|exit|fanhui|guanbi|tuichu/i.test((x.getAttribute('class')||'')+' '+(x.querySelector('use')?.getAttribute('xlink:href')||''))).slice(0,12).map(x=>({classes:x.getAttribute('class'),html:x.parentElement?.outerHTML.slice(0,5000)}));const nav=n('span,div,a,button').filter(x=>['布局图纸','编辑视图','去布局','设置','图纸&清单','返回','退出','模板'].includes(text(x))).filter(x=>![...x.children].some(c=>text(c)===text(x)));
-      return{...result,status:'frontend-drawing-observed',title:document.title,text:text(document.body).slice(0,14000),iconEvidence,navigationEvidence:nav.slice(0,20).map(x=>({label:text(x),html:x.parentElement?.parentElement?.outerHTML.slice(0,6000)})),buttons:n('button,[role="button"],a').map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),disabled:!!x.disabled})).filter(x=>x.label||x.title||x.ariaLabel).slice(0,130),images:n('img').slice(0,40).map(x=>({alt:x.alt,title:x.getAttribute('title'),classes:x.getAttribute('class'),bounds:rect(x)})),labels:n('[title],[aria-label]').slice(0,100).map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),classes:x.getAttribute('class')})),frames:n('iframe').map(x=>({title:x.title,src:(()=>{try{const u=new URL(x.src,location.href);return u.origin+u.pathname}catch{return null}})()}))};
+      const entryText=/施工图|企业模板|选择模板|更新配置|^设置$|图纸&清单/;
+      const entries=n('span,div,a,button,[role="menuitem"]').filter(exposed).filter(x=>text(x).length<80&&entryText.test(text(x))).filter(x=>![...x.children].some(c=>exposed(c)&&entryText.test(text(c))));
+      result.fields=n('input,select,textarea,[role="combobox"],[role="switch"]').filter(x=>!['password','hidden'].includes(x.getAttribute('type'))&&!/password|token|secret|authorization/i.test((x.id||'')+' '+(x.getAttribute('name')||''))).slice(0,50).map(x=>({tag:x.tagName,type:x.getAttribute('type'),value:x.value??null,placeholder:x.getAttribute('placeholder'),label:x.getAttribute('aria-label'),context:text(x.parentElement).slice(0,220)}));
+      result.templateControls=n('.tui-select,.ant-select,[role="listbox"]').slice(0,25).map(x=>({text:text(x).slice(0,220),context:text(x.parentElement).slice(0,300),classes:x.getAttribute('class')}));
+      result.dialogs=n('[role="dialog"],.ant-modal-content,.tui-modal-content').map(x=>({text:text(x).slice(0,5000),buttons:[...x.querySelectorAll('button')].filter(visible).map(text)}));
+      return{...result,status:options.navigationTask?'frontend-navigation-observed':'frontend-drawing-observed',title:document.title,text:text(document.body).slice(0,14000),navigationCandidates:entries.slice(0,35).map(x=>({label:text(x),tag:x.tagName,classes:x.getAttribute('class'),bounds:rect(x),ancestors:(()=>{const a=[];for(let p=x,i=0;p&&p!==document.body&&i<5;p=p.parentElement,i++)a.push({tag:p.tagName,classes:p.getAttribute('class'),role:p.getAttribute('role'),html:i===3?p.outerHTML.slice(0,9000):undefined});return a;})(),html:(x.closest('.tuipro-secondary-toolbar-item')||x.parentElement)?.outerHTML.slice(0,3000)})),iconEvidence,navigationEvidence:nav.slice(0,20).map(x=>({label:text(x),html:x.parentElement?.parentElement?.outerHTML.slice(0,6000)})),buttons:n('button,[role="button"],a').map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),disabled:!!x.disabled})).filter(x=>x.label||x.title||x.ariaLabel).slice(0,130),images:n('img').slice(0,40).map(x=>({alt:x.alt,title:x.getAttribute('title'),classes:x.getAttribute('class'),bounds:rect(x)})),labels:n('[title],[aria-label]').slice(0,100).map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),classes:x.getAttribute('class')})),frames:n('iframe').map(x=>({title:x.title,src:(()=>{try{const u=new URL(x.src,location.href);return u.origin+u.pathname}catch{return null}})()}))};
     }
     if(options.expectedCompanyName!==undefined&&(!options.expectedCompanyName?.trim()||options.expectedCompanyName.length>200))throw Error('Invalid expected company display name');
     const nodes=candidateNodes();
@@ -92,6 +122,7 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
         if(ids.length===1){result.visibleAccountId=ids[0];result.accountIdEvidence=accountIds.find(e=>e.id===ids[0]);}
         if(options.expectedCompanyName===undefined)result.status='identity-read';
         else {result.displayNameMatch=names[0]===expected;result.status=result.displayNameMatch?'display-name-match':'display-name-mismatch';}
+        globalThis.__drawingAccountDisplayProof={url:location.href,documentEpoch:globalThis.performance?.timeOrigin,checkedAt:Date.now(),companyDisplayName:result.companyDisplayName,visibleAccountId:result.visibleAccountId};
       }
       return result;
     }finally{

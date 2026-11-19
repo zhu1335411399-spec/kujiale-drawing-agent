@@ -64,7 +64,7 @@ description: 酷家乐施工图配置 Agent。用于区分企业账号自配置�
 
 ## 工具能力边界
 
-对象配置的大类枚举、真分类定位、墙的三属性自定义、浅底造型线引用替换和 drawing_save_object_config 保存后刷新回读已在真实页面验证；其他真分类、显示列、主题及填充须分别验证。drawing_inspect_frontend_drawing 仅只读结构；本轮未确认企业模板和前端生效。详见 [对象配置](references/object-config.md)。
+对象配置的大类枚举、真分类定位、墙的三属性自定义、浅底造型线引用替换和 drawing_save_object_config 保存后刷新回读已在真实页面验证；其他真分类、显示列、主题及填充须分别验证。drawing_frontend_navigation 可打开图纸菜单、施工图工作区和设置菜单，已打开时不重复点击；drawing_inspect_frontend_drawing 只读结构，当前企业模板、更新配置及前端生效仍需独立确认。详见 [对象配置](references/object-config.md)。
 
 注释四类新建、名称搜索、文本字号修改及 drawing_save_annotation_styles 回执保存已在真实页面执行，并完成刷新、重载原客户、同 ID 和字号回读。其他三类规范字段修改、独立重命名、跨页搜索与前端应用仍未验证，不扩大该证据范围。保存只使用本轮连续回执；不发布。合同见 [注释写入流程](references/annotation-write.md)。
 

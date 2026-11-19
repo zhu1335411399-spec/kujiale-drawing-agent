@@ -14,7 +14,7 @@
 
 ## 前端账号只读采集
 
-新增 drawing_read_frontend_identity，使用实际浏览器类型和 pageId 定位，分 inspect 与 hover 两步，读取头像关联名称。
+日常使用 drawing_read_frontend_account，在普通设计端读取账号并共享缓存；drawing_read_frontend_identity 保留 inspect 与 hover 两步诊断。扩展重载后的真实共享调用已确认第二次复用相同 readAt 的结果。固定导航 drawing_frontend_navigation 可打开图纸菜单、施工图工作区及设置，不选择模板或更新配置。
 详见 [前端头像读取](../skills/kujiale-drawing-bridge/references/frontend-identity.md)。已通过真实 MCP 调用读取 Edge 头像账号菜单中的企业名称，并与 Chrome 后台来源名称匹配；图纸、模板和配置版本尚未因此得到验证。
 
 ## 代码分组
