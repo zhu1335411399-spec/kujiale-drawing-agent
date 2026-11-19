@@ -3,6 +3,7 @@ export const workflowInstructions = [
   '先读取双端上下文并绑定 pageId，多个目标时精确定位。客户主页侧边栏无施工图入口时查应用市场。',
   '企业账号具备基础设置权限时可自配置，无需载入客户；无论企业账号是否具备基础设置，获授权内部操作员可载入客户代配基础配置。企业配置只能由企业账号操作。同一账号前后端可使用同一浏览器的不同标签，不同账号并行使用独立浏览器会话。核对客户、配置、测试方案及企业模板引用，显示标签不证明真实身份或归属。',
   '修改前记录原值与目标值。线样式名称搜索使用 drawing_search_line_styles 并检查 complete；drawing_update_line_style 要求完整原值快照和行ID，只修改指定字段；编辑回执用 drawing_save_line_style 独立保存并确认刷新回读。CONTINUOUS不设置比例；引用范围未知时说明。通用 drawing_save_config 尚未接通，不能用它代替线样式回执保存。没有修改不重复写入。',
+  '注释样式用 drawing_inspect_style_settings 分别读取 text、leader、dimension、elevation 面板，按标题、section及contextPath区分字段。新建用 drawing_create_annotation_style 完成名称向导及本分类规范面板；搜索用 drawing_search_annotation_styles；修改用 drawing_update_annotation_style，仅支持改名路径与文本字号；一轮修改后用 drawing_save_annotation_styles 保存所有连续回执并刷新、重载原客户回读。源码注册不等于实测成功，未加载新版输入通道时停止。T/L名称不代替字段真值，未知单位不猜；深浅配色、遮罩和跨样式引用分别核对。其他规范字段和反向引用仍未知，不套用线样式工具。',
   '保存失败或超时先查实际状态，不盲目重试；配置版本变化时重新读取差异，不覆盖并发修改。工具缺少证据时如实标为待确认。',
   '设计端打开“图纸&清单”，后台保存确认后在“设置 → 更新配置”等待完成，再核对或重新生成目标图纸。不能以保存、网页刷新或旧截图代替本轮前端验收。再次修改后必须重新保存、更新和验收。',
   '前端效果未变时排查保存、客户配置、模板/部门引用、更新配置和图纸生成，不自动发布。额外覆盖前端手动编辑须在用户授权范围内。',

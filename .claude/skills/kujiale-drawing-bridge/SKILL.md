@@ -1,6 +1,6 @@
 ---
 name: kujiale-drawing-bridge
-description: 酷家乐施工图配置 Agent。用于按权限区分企业账号自配置和内部操作员代配置，定位后端配置页及前端设计页，读取基础配置和线样式，按独立保存、独立发布及前端更新配置和自动标注流程执行验收。
+description: 酷家乐施工图配置 Agent。用于区分企业账号自配置和内部操作员代配置，读取基础配置、操作线样式，分别识别和新建文本、引线、尺寸、标高注释样式，搜索注释样式、修改文本字号及保存回读，并核对深浅配色、发布和前端配置应用的实际能力。
 ---
 
 # 施工图配置 Agent
@@ -53,6 +53,7 @@ description: 酷家乐施工图配置 Agent。用于按权限区分企业账号�
 - 载入客户配置时读取 [通用载入流程](references/customer-load.md)，区分候选查询、已载入核对、实际提交与结果不确定。
 - 执行配置任务时读取 [配置工作流](references/workflow.md)，覆盖目标绑定、并发变更、失败定位、发布和恢复。
 - 处理线样式时读取 [线样式合同](references/line-styles.md)，区分通用列、客户个性化数据、当前页过滤与网页搜索；先定位再操作，不硬编码客户样式或未验证的选项全集。
+- 处理注释样式或通用配色时读取 [四类注释样式](references/annotation-styles.md)。用 drawing_inspect_style_settings 分别核对面板、实际参数和引用，深浅配色与遮罩分别检查；涉及新建、搜索、修改或保存时再读取 [注释写入流程](references/annotation-write.md)，逐项核对部署与真实回执，不将某个字段成功推广为整类支持。
 - 查找页面或核对接口时读取 [页面与接口](references/routes.md)，只读命中的小节；观察到的请求不能当作已验证 API。
 
 - 核对工具可用性时读取 [能力分组](references/capabilities.md)，区分已实测、诊断、实验与占位工具。
@@ -61,6 +62,8 @@ description: 酷家乐施工图配置 Agent。用于按权限区分企业账号�
 - 配置连接时读取 [HTTP 连接](references/connection-http.md)，不要将旧管理器状态作为当前网关验收。
 
 ## 工具能力边界
+
+注释四类新建、名称搜索、文本字号修改及 drawing_save_annotation_styles 回执保存已在真实页面执行，并完成刷新、重载原客户、同 ID 和字号回读。其他三类规范字段修改、独立重命名、跨页搜索与前端应用仍未验证，不扩大该证据范围。保存只使用本轮连续回执；不发布。合同见 [注释写入流程](references/annotation-write.md)。
 
 读取工具已实现；drawing_create_line_draft 已在真实页面完成新建和字段回读，但不保存、发布或重载。已有线样式的搜索、指定字段编辑与 drawing_save_line_style 独立保存已在真实浏览器完成；保存反馈、刷新后原客户同 ID 字段回读共同构成证据。新建草稿回执不能直接作为编辑保存回执，交接缺口仍需按新建参考处理。drawing_save_config、drawing_publish_config 当前仅进行目标核对，返回 executed:false 时未执行，不能据线样式保存成功宣称通用保存或其他分类已支持。
 

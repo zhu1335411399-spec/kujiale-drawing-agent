@@ -2,8 +2,14 @@ const writeTarget = {
   pageId: { type: 'string', minLength: 1, maxLength: 120 },
   expectedConfigName: { type: 'string', minLength: 1, maxLength: 200 }
 };
+const annotationTarget={...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},annotationKind:{type:'string',enum:['text','leader','dimension','elevation']}};
 
 export const tools = [
+  {name:'drawing_search_annotation_styles',description:'在指定注释分类中实际搜索样式名称，回读行ID和名称及当前结果完整性。不修改或保存。',annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:true},inputSchema:{type:'object',additionalProperties:false,properties:{...annotationTarget,query:{type:'string',minLength:0,maxLength:100},match:{type:'string',enum:['exact','contains']}},required:['pageId','expectedConfigName','expectedCustomerName','annotationKind','query']}},
+  {name:'drawing_create_annotation_style',description:'在明确客户和分类中新建一个注释测试/业务样式，保留规范默认值，设置指定名称并按新ID回读。只创建草稿，返回receiptId；结果不明禁止重复新建。',annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},inputSchema:{type:'object',additionalProperties:false,properties:{...annotationTarget,name:{type:'string',minLength:1,maxLength:50},requestId:{type:'string',minLength:8,maxLength:100}},required:['pageId','expectedConfigName','expectedCustomerName','annotationKind','name','requestId']}},
+  {name:'drawing_update_annotation_style',description:'通过原ID与名称快照修改指定注释样式。支持保留ID改名；文本分类可修改fontSize并重新打开面板核对其他字段未变化。其他规范字段不支持。不保存发布，返回编辑回执；失败先核对实际结果。',annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},inputSchema:{type:'object',additionalProperties:false,properties:{...annotationTarget,requestId:{type:'string',minLength:8,maxLength:100},expectedStyle:{type:'object',additionalProperties:false,properties:{id:{type:'string'},name:{type:'string'}},required:['id','name']},changes:{type:'object',additionalProperties:false,minProperties:1,properties:{name:{type:'string',minLength:1,maxLength:100},fontSize:{type:'string',minLength:1,maxLength:20}}}},required:['pageId','expectedConfigName','expectedCustomerName','annotationKind','requestId','expectedStyle','changes']}},
+  {name:'drawing_save_annotation_styles',description:'独立保存同一页面多个注释编辑回执。先核对各分类列表和客户确认框，保存时间更新后刷新，重新载入原客户并按同一ID回读。确认已提交后不重复保存；不发布。独立服务器API未验证。',annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:true},inputSchema:{type:'object',additionalProperties:false,properties:{...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},receiptIds:{type:'array',minItems:1,maxItems:20,items:{type:'string',minLength:8,maxLength:100}}},required:['pageId','expectedConfigName','expectedCustomerName','receiptIds']}},
+  {name:'drawing_inspect_style_settings',description:'只读查看样式配置的注释样式或通用设置。可切换已观察的子标签、按实际行ID打开编辑面板查看字段，再取消关闭；不新建、不改名称或任何值、不保存发布。返回当前可见字段，不能宣称完整分类已支持编辑。',annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true},inputSchema:{type:'object',additionalProperties:false,properties:{...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},section:{type:'string',enum:['annotation','general']},action:{type:'string',enum:['inspect','open-editor','close-editor']},annotationKind:{type:'string',enum:['text','leader','dimension','elevation']},styleId:{type:'string',minLength:1,maxLength:120},limit:{type:'integer',minimum:1,maximum:50}},required:['pageId','expectedConfigName','expectedCustomerName','section','action']}},
   {name:'drawing_search_line_styles',description:'在已打开线样式页使用网页搜索框搜索名称，并逐页读取结果；区别于当前页本地过滤。返回实际记录ID和原字段快照、已检查结果页数及complete。范围是网页搜索结果，不能据此宣称搜索了所有库；结果未查完整时禁止用于唯一定位。不修改样式或保存。',
     annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true},
     inputSchema:{type:'object',additionalProperties:false,properties:{...writeTarget,expectedCustomerName:{type:'string',minLength:1,maxLength:200},query:{type:'string',minLength:0,maxLength:100},match:{type:'string',enum:['exact','contains'],maxLength:10},maxPages:{type:'integer',minimum:1,maximum:10}},required:['pageId','expectedConfigName','expectedCustomerName','query']}},
@@ -121,6 +127,15 @@ export function validateCall(name, value = {}) {
   if (!tool) throw new Error('Unknown tool');
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Arguments must be an object');
   const schema = tool.inputSchema;
+  if(['drawing_create_annotation_style','drawing_update_annotation_style'].includes(name)&&!/^[A-Za-z0-9_-]{8,100}$/.test(value.requestId||''))throw Error('Invalid annotation request ID');
+  if(name==='drawing_create_annotation_style'&&!value.name?.trim())throw Error('Explicit annotation name required');
+  if(name==='drawing_update_annotation_style'){
+    const s=value.expectedStyle,p=value.changes;
+    if(!s||typeof s!=='object'||Array.isArray(s)||Object.keys(s).sort().join(',')!=='id,name'||!s.id||!s.name||Object.values(s).some(v=>typeof v!=='string'||v.length>200))throw Error('Original annotation ID and name required');
+    if(!p||typeof p!=='object'||Array.isArray(p)||!Object.keys(p).length||Object.keys(p).some(k=>!['name','fontSize'].includes(k))||Object.values(p).some(v=>typeof v!=='string'||!v.trim()||v.length>100))throw Error('Only explicit annotation changes are supported');
+    if(p.fontSize!==undefined&&(value.annotationKind!=='text'||!/^\d+(\.\d+)?$/.test(p.fontSize)||!Number.isFinite(Number(p.fontSize))||Number(p.fontSize)<=0))throw Error('Positive platform font size is only supported for text styles');
+  }
+  if(name==='drawing_save_annotation_styles'&&(!Array.isArray(value.receiptIds)||!value.receiptIds.length||value.receiptIds.length>20||new Set(value.receiptIds).size!==value.receiptIds.length||value.receiptIds.some(v=>typeof v!=='string'||!/^[A-Za-z0-9_-]{8,100}$/.test(v))))throw Error('Distinct annotation receipt IDs required');
   if(name==='drawing_update_line_style'){
     if(!/^[A-Za-z0-9_-]{8,100}$/.test(value.requestId||''))throw Error('Invalid edit request ID');
     const style=value.expectedStyle,patch=value.changes;

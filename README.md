@@ -7,6 +7,9 @@
 - [Skill 入口](.agents/skills/kujiale-drawing-bridge/SKILL.md)
 - [完整验收流程](.agents/skills/kujiale-drawing-bridge/references/workflow.md)
 - [页面与接口参考](.agents/skills/kujiale-drawing-bridge/references/routes.md)
+- [四类注释样式与配色规则](.agents/skills/kujiale-drawing-bridge/references/annotation-styles.md)
+- [注释样式实际盘点](docs/annotation-style-inspection.md)
+- [注释样式新建、搜索、文本字号编辑与保存](skills/kujiale-drawing-bridge/references/annotation-write.md)
 - [MCP 工具说明](mcp/DESIGN.md)
 - [待更新内容](docs/pending-updates.md)
 - [迁移记录](docs/migration.md)
@@ -32,6 +35,8 @@
 历史完整包仍在 [原仓库 0.5.0 发行页](https://github.com/zhu1335411399-spec/kujiale-model-agent/releases/tag/drawing-v0.5.0)。等独立仓库建立并验证完成后，再迁移发行附件；不能把源码 ZIP 当作含 Node 的运行包。
 
 当前源码包含页面读取、客户载入、前端头像核对、新建线样式草稿，以及线样式名称搜索、指定记录编辑与回执保存。操作流程及实际验收状态见 [能力分组](skills/kujiale-drawing-bridge/references/capabilities.md) 和 [线样式搜索编辑](skills/kujiale-drawing-bridge/references/line-style-edit.md)。通用 drawing_save_config / drawing_publish_config 仍为未执行入口；线样式回执保存不代表其他分类已支持。前端更新配置、自动标注、另存为、出图及恢复尚未自动接通。
+
+注释样式也提供同一服务下的专用工具：四类新建、名称搜索、文本字号修改和回执保存已完成真实页面操作，并在刷新、重载原客户后按原 ID 和字段回读。其他规范字段、独立重命名及前端应用尚未验收，详见上方注释写入流程。此次更新不发布新安装包。
 
 源码运行/打包需 Node.js 20+。完整运行包自带 Node；首次使用仍需用户加载扩展、信任 AI 客户端项目，并登录自己的账号。运行包不内置 AI 聊天软件或账号。
 
