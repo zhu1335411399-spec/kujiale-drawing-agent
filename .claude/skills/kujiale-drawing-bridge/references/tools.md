@@ -20,6 +20,7 @@
 | 新建线样式草稿 | drawing_create_line_draft | [新建流程](line-style-create.md) |
 | 载入客户 | drawing_load_customer_config | [载入流程](customer-load.md) |
 | 前端头像账号核对 | drawing_read_frontend_identity | [显示身份](frontend-identity.md) |
+| 前端账号及工作区状态 | drawing_read_frontend_account | 普通设计端可读账号；共享缓存，明确 refresh 才重测 |
 | 通用保存、发布 | drawing_save_config、drawing_publish_config | 仅目标核对，返回未执行 |
 
 前端更新配置、自动标注、另存为、出图和恢复尚无已验证的自动执行工具。线样式复制、删除和批量导入仍待适配；对象引用的局部验证不代表其他分类的引用已支持。接口研究及实验工具不作为日常工作流入口。

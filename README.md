@@ -10,6 +10,7 @@
 - [四类注释样式与配色规则](.agents/skills/kujiale-drawing-bridge/references/annotation-styles.md)
 - [注释样式实际盘点](docs/annotation-style-inspection.md)
 - [对象属性、显示样式与前端验收](skills/kujiale-drawing-bridge/references/object-config.md)
+- [扩展账号检测与工作区状态](docs/extension-panel.md)
 - [注释样式新建、搜索、文本字号编辑与保存](skills/kujiale-drawing-bridge/references/annotation-write.md)
 - [MCP 工具说明](mcp/DESIGN.md)
 - [待更新内容](docs/pending-updates.md)
@@ -42,6 +43,8 @@
 源码运行/打包需 Node.js 20+。完整运行包自带 Node；首次使用仍需用户加载扩展、信任 AI 客户端项目，并登录自己的账号。运行包不内置 AI 聊天软件或账号。
 
 对象配置新增专用工具：大类/真分类读取、三属性编辑、线样式引用替换和回执保存。墙的三属性自定义与浅底造型线替换已在真实页面完成保存、刷新及同 ID 回读；前端企业模板、更新配置与最终效果尚未验收。详见对象配置参考，不将单一对象的验证扩大到所有分类和字段。
+
+扩展账号检测使用共享后台检测器：同一文档自动读取一次，重复请求合并、失败和超时不循环重试；刷新状态不强制悬停，按钮明确更新。普通设计端可检测账号，施工图打开状态和效果验收独立显示。首次加载此版本需在对应浏览器重新加载扩展一次，权限保持不变，不发布新安装包。
 
 ## 开发检查
 

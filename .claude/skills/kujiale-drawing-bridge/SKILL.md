@@ -33,7 +33,7 @@ description: 酷家乐施工图配置 Agent。用于区分企业账号自配置�
 
 ## 前端账号显示核对
 
-使用 drawing_read_frontend_identity 读取目标浏览器设计页的头像提示。先 inspect 定位真实头像及 frameId，再使用观察到的 avatarKey 执行 hover；不得将任意页首图标、整页文本或后台操作员名称当作客户身份。按结果区分名称匹配、不匹配与未确认；模板和配置应用另行核验。
+日常使用 drawing_read_frontend_account 读取账号和工作区状态，普通设计端不要求先打开施工图。默认共享同一文档的缓存和在途请求，不循环检测；开始业务验收或怀疑账号变化时明确 refresh=true 更新并核对，不将历史缓存当作刚验证的身份。模板和配置应用另行核验。诊断时用 drawing_read_frontend_identity 的 inspect 定位真实头像及 frameId，再用观察到的 avatarKey 执行 hover；不得将任意页首图标、整页文本或后台操作员名称当作客户身份。
 
 ## 新建线样式
 

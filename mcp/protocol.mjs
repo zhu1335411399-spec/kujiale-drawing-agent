@@ -35,6 +35,10 @@ export function createProtocol(broker) {
           catch (error) { return fail(-32602, error.message); }
           try {
             const name = request.params.name;
+            if(name==='drawing_read_frontend_account'){
+              try{const value=await broker.page(args.pageId,'frontend-account',args);result={content:[{type:'text',text:JSON.stringify(value)}]};}
+              catch(error){if(!/Unsupported readonly operation/.test(error.message))throw error;result={isError:true,content:[{type:'text',text:JSON.stringify({status:'extension-reload-required',executed:false,saved:false,published:false,message:'共享账号检测模块尚未在此浏览器加载；请在扩展管理页重新加载施工图扩展一次，再打开侧栏。仅重新连接不会更新工作线程。'})}]};}break;
+            }
             if(name==='drawing_inspect_frontend_drawing'){
               const value=await broker.page(args.pageId,'frontend-identity',{...args,action:'inspect',drawingTask:'inspect'});
               result={content:[{type:'text',text:JSON.stringify(value)}]};break;

@@ -35,6 +35,10 @@ test('inspect returns observed candidates without hover or clicks',async()=>{
   const f=fixture({ambiguous:true});const r=await f.run({action:'inspect'});
   assert.equal(r.status,'identity-inspected');assert.equal(r.candidateCount,2);assert.equal(f.events.length,0);assert.equal(r.companyDisplayName,null);
 });
+test('ordinary designer avatar is supported without the drawing-specific toolbar class',async()=>{
+  const f=fixture();const r=await f.run({action:'inspect'});assert.equal(r.avatarCandidates[0].accountAvatar,true);assert.equal(r.avatarCandidates[0].avatarKey.includes('tuipro-topbar-fixed-avatar'),false);assert.equal(r.workspace.stage,'design');assert.equal(r.workspace.drawingOpen,false);
+  f.avatar.getBoundingClientRect=()=>({x:-200,y:20,width:40,height:40});assert.equal((await f.run({action:'inspect'})).candidateCount,0);
+});
 test('chosen avatar title is read and display name matched without identity-ID claims',async()=>{
   const f=fixture();const probe=await f.run({action:'inspect'});const r=await f.run({action:'hover',avatarKey:probe.avatarCandidates[0].avatarKey});
   assert.equal(r.status,'display-name-match');assert.equal(r.companyDisplayName,'示例企业');assert.equal(r.identityVerified,false);assert.equal(r.saved,false);assert.equal(r.published,false);
@@ -80,6 +84,15 @@ test('MCP exposes dedicated readonly tool and routes failed reads as errors',asy
   const list=await dispatch({jsonrpc:'2.0',id:1,method:'tools/list'});assert.equal(list.result.tools.find(t=>t.name==='drawing_read_frontend_identity').annotations.readOnlyHint,true);
   const r=await dispatch({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'drawing_read_frontend_identity',arguments:{pageId:'sample-page',action:'inspect',expectedBrowser:'Edge',expectedCompanyName:'示例企业'}}});
   assert.equal(operation,'frontend-identity');assert.equal(r.result.isError,true);
+});
+test('shared account tool uses cached reads by default and rejects an implicit refresh value',async()=>{
+  const seen=[];const dispatch=createProtocol({page:async(id,op,args)=>{seen.push({op,args});return{status:'display-name-match',cached:true,workspace:{drawingOpen:false}};}});
+  const args={pageId:'fixture-page',expectedBrowser:'Edge',expectedCompanyName:'Fixture company'};
+  const r=await dispatch({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'drawing_read_frontend_account',arguments:args}});assert.equal(r.result.isError,undefined);assert.equal(seen[0].op,'frontend-account');assert.equal(seen[0].args.refresh,undefined);
+  const bad=await dispatch({jsonrpc:'2.0',id:4,method:'tools/call',params:{name:'drawing_read_frontend_account',arguments:{...args,refresh:'true'}}});assert.equal(bad.error.code,-32602);assert.equal(seen.length,1);
+});
+test('an older extension is reported as reload required without a fallback hover loop',async()=>{
+  let count=0;const dispatch=createProtocol({page:async()=>{count++;throw Error('Unsupported readonly operation');}});const r=await dispatch({jsonrpc:'2.0',id:5,method:'tools/call',params:{name:'drawing_read_frontend_account',arguments:{pageId:'fixture-page',expectedBrowser:'Edge',expectedCompanyName:'Fixture company'}}});assert.equal(r.result.isError,true);assert.equal(JSON.parse(r.result.content[0].text).status,'extension-reload-required');assert.equal(count,1);
 });
 test('browser family report survives polling and invalid report cannot replace known family',()=>{
   const broker=new Broker();const id='00000000-0000-4000-8000-000000000001',instance='00000000-0000-4000-8000-000000000002';

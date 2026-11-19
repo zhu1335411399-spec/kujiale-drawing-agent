@@ -2,9 +2,9 @@
 globalThis.__drawingReadFrontendIdentity=async function(options){
   const text=n=>(n?.innerText||n?.textContent||'').trim().replace(/\s+/g,' ');
   const clean=s=>(s||'').trim().replace(/\s+/g,' ');
-  const visible=n=>!!n?.getClientRects().length&&getComputedStyle(n).visibility!=='hidden';
+  const visible=n=>{if(!n?.getClientRects().length)return false;const r=n.getBoundingClientRect();if(r.width<=0||r.height<=0||r.x+r.width<=0||r.y+r.height<=0||r.x>=innerWidth||(typeof innerHeight==='number'&&r.y>=innerHeight))return false;for(let p=n;p&&p!==document.body;p=p.parentElement){const s=getComputedStyle(p);if(s.visibility==='hidden'||s.display==='none'||s.opacity==='0')return false;}return true;};
   const browser=navigator.userAgent.includes('Edg/')?'Edge':navigator.userAgent.includes('Chrome/')?'Chrome':'unknown';
-  const result={readerBuild:'frontend-identity-4',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
+  const result={readerBuild:'frontend-identity-5',readAt:new Date().toISOString(),url:location.origin+location.pathname,browser,
     status:'identity-unconfirmed',companyDisplayName:null,visibleAccountId:null,displayNameMatch:null,identityVerified:false,saved:false,published:false,evidence:[]};
   const generic=new Set(['头像','用户头像','账号','账户','个人中心','用户中心','avatar','profile','account']);
   const usable=s=>!!clean(s)&&clean(s).length<=200&&!generic.has(clean(s).toLowerCase())&&!/https?:\/\//i.test(s);
@@ -22,11 +22,15 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
     // An avatar wrapper and its image are one candidate, not two independently chosen targets.
     return nodes.filter(n=>!nodes.some(x=>x!==n&&n.contains(x)&&isHeader(x)));
   };
+  const accountAvatar=n=>{for(let p=n,i=0;p&&p!==document.body&&i<5;p=p.parentElement,i++)if(/avatar|头像/i.test(['class','data-testid','aria-label'].map(k=>p.getAttribute(k)||'').join(' ')))return true;return false;};
   try{
     if(!['www.kujiale.com','beta.kujiale.com','yun.kujiale.com','yun-beta.kujiale.com'].includes(location.hostname)||
       location.protocol!=='https:'||location.port)throw Error('Not a supported design origin');
     if(!['inspect','hover'].includes(options.action))throw Error('Invalid identity-read action');
     if(browser!==options.expectedBrowser)throw Error('Connected browser family does not match the selected browser');
+    const edit=document.getElementById?.('drawings-edit-views'),layout=document.getElementById?.('drawings-generate-sheets');
+    const drawingOpen=visible(edit)||visible(layout),stage=drawingOpen?(visible(layout)&&layout.classList.contains('selected')?'drawing-layout':'drawing-editor'):'design';
+    result.workspace={stage,drawingOpen,templateVerified:false,configurationUpdated:false,effectVerified:false};
     if(options.drawingTask==='inspect'){
       const n=s=>[...document.querySelectorAll(s)].filter(visible);
       const iconEvidence=n('i,svg').filter(x=>/back|return|close|exit|fanhui|guanbi|tuichu/i.test((x.getAttribute('class')||'')+' '+(x.querySelector('use')?.getAttribute('xlink:href')||''))).slice(0,12).map(x=>({classes:x.getAttribute('class'),html:x.parentElement?.outerHTML.slice(0,5000)}));const nav=n('span,div,a,button').filter(x=>['布局图纸','编辑视图','去布局','设置','图纸&清单','返回','退出','模板'].includes(text(x))).filter(x=>![...x.children].some(c=>text(c)===text(x)));
@@ -34,7 +38,7 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
     }
     if(options.expectedCompanyName!==undefined&&(!options.expectedCompanyName?.trim()||options.expectedCompanyName.length>200))throw Error('Invalid expected company display name');
     const nodes=candidateNodes();
-    result.avatarCandidates=nodes.map(n=>({avatarKey:key(n),tag:n.tagName,id:n.id||null,classes:n.getAttribute('class')||'',title:n.getAttribute('title'),ariaLabel:n.getAttribute('aria-label'),alt:n.getAttribute('alt'),bounds:rect(n)})).slice(0,30);
+    result.avatarCandidates=nodes.map(n=>({avatarKey:key(n),accountAvatar:accountAvatar(n),tag:n.tagName,id:n.id||null,classes:n.getAttribute('class')||'',title:n.getAttribute('title'),ariaLabel:n.getAttribute('aria-label'),alt:n.getAttribute('alt'),bounds:rect(n)})).slice(0,30);
     if(options.action==='inspect')return{...result,status:'identity-inspected',candidateCount:nodes.length};
     if(!options.avatarKey)throw Error('Inspect first and select the observed avatarKey');
     const matches=nodes.filter(n=>key(n)===options.avatarKey);

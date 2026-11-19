@@ -11,13 +11,15 @@
 <h2 id="pageHeading">页面与账号</h2><label class="muted" for="pages">选择当前浏览器中的页面</label><select id="pages"></select>
 <dl>
 <div class="field"><dt>页面类型</dt><dd id="role">未选择页面</dd></div>
+<div class="field" id="workspaceRow" hidden><dt>施工图状态</dt><dd id="workspace">待识别</dd></div>
 <div class="field"><dt>登录账号</dt><dd id="company" class="name">未读取</dd></div>
 <div class="field"><dt>页面账号 ID</dt><dd><code id="accountId">未读取</code></dd></div>
 <div class="field" id="sourceRow" hidden><dt>来源客户</dt><dd id="source">未读取</dd></div>
 <div class="field" id="sourceIdRow" hidden><dt>来源客户 ID</dt><dd><code id="sourceId">未读取</code></dd></div>
 <div class="field" id="templateRow" hidden><dt>当前基础模板</dt><dd id="template">未读取</dd></div>
 </dl>
-<p id="identityTime" class="muted"></p><div class="actions"><button id="readIdentity" hidden>更新头像账号和 ID</button></div>
+<p id="validationHint" class="muted"></p>
+<p id="identityTime" class="muted"></p><div class="actions"><button id="readIdentity" hidden>更新账号信息</button></div>
 </section>
 <details><summary>页面连接标识</summary><dl>
 <div class="field"><dt>浏览器会话 ID</dt><dd><code id="clientId">未读取</code></dd></div>
@@ -26,6 +28,6 @@
 <div class="field"><dt>页面地址</dt><dd id="url">未读取</dd></div>
 </dl><p class="muted">连接标识用于定位页面，与页面账号 ID 不同。</p></details>
 <p id="notice" role="status" aria-live="polite"></p>
-<p class="muted">仅显示当前浏览器。名称和账号 ID 来自页面，模板是否应用需单独核对。</p>
+<p class="muted">普通设计端也可检测账号。账号检测、施工图状态与效果验证分开核对；不会自动修改或发布配置。</p>
 <script type="module" src="sidepanel.js"></script>
 </body></html>

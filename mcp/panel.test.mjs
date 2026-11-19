@@ -5,8 +5,8 @@ import {startPanel} from '../browser-extension/panel.js';
 import {readPanelPage,pageId,sourceName} from '../browser-extension/panel-data.js';
 
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
-function ui({pages=[{tabId:7,role:'design',connected:true,title:'设计页',pageId:'profile-id:7'}],read=async()=>({tabId:7,role:'design',url:'https://www.kujiale.com/tool/h5/bim',frontend:{companyDisplayName:'示例企业',visibleAccountId:'EXAMPLE123',readAt:new Date().toISOString()}})}={}){
-  const elements=new Map(),listeners={},timers=[];
+function ui({pages=[{tabId:7,role:'design',connected:true,title:'设计页',pageId:'profile-id:7'}],activeTabId=null,read=async()=>({tabId:7,role:'design',url:'https://www.kujiale.com/tool/h5/bim',frontend:{companyDisplayName:'示例企业',visibleAccountId:'EXAMPLE123',readAt:new Date().toISOString()}})}={}){
+  const elements=new Map(),listeners={},timers=[],windowListeners={};
   class Element{
     constructor(){this.children=[];this.value='';this.textContent='';this.hidden=false;this.disabled=false;this.listeners={};}
     set innerHTML(_value){throw Error('Render untrusted page text with textContent');}
@@ -19,8 +19,8 @@ function ui({pages=[{tabId:7,role:'design',connected:true,title:'设计页',page
   const event=name=>({addListener(fn){listeners[name]=fn;},removeListener(){}});
   const api={runtime:{sendMessage:async()=>({connected:true,checkedAt:Date.now()})},tabs:{onRemoved:event('removed'),onCreated:event('created'),onReplaced:event('replaced'),onUpdated:event('updated')},windows:{onRemoved:event('windowRemoved')}};
   const state={pages};
-  const panel=startPanel({document,api,window:{addEventListener(){},removeEventListener(){}},read,list:async()=>({browser:'Edge',clientId:'profile-id',pages:state.pages}),setTimer:fn=>{timers.push(fn);return timers.length;},clearTimer(){},setRepeating:()=>1,clearRepeating(){}});
-  return{elements,listeners,timers,state,panel};
+  const panel=startPanel({document,api,window:{addEventListener(type,fn){windowListeners[type]=fn;},removeEventListener(){}},read,list:async()=>({browser:'Edge',clientId:'profile-id',activeTabId,pages:state.pages}),setTimer:(fn,ms)=>{fn.ms=ms;timers.push(fn);return fn;},clearTimer(fn){if(fn)fn.cancelled=true;},setRepeating:()=>1,clearRepeating(){}});
+  return{elements,listeners,timers,windowListeners,state,panel};
 }
 test('account ID and technical page IDs occupy separate fields',async()=>{
   const f=ui();await flush();assert.equal(f.elements.get('accountId').textContent,'EXAMPLE123');assert.equal(f.elements.get('pageId').textContent,'profile-id:7');assert.equal(f.elements.get('clientId').textContent,'profile-id');assert.equal(f.elements.get('tabId').textContent,'7');assert.equal(f.elements.get('browser').textContent,'Edge');assert.equal(f.elements.get('sourceRow').hidden,true);f.panel.dispose();
@@ -46,4 +46,21 @@ test('page identifiers require a browser profile and source names require the ac
 });
 test('panel refuses a selected tab that navigated away from a supported design/config page',async()=>{
   let called=false;await assert.rejects(readPanelPage(1,{api:{tabs:{get:async()=>({url:'https://www.kujiale.com/login'})},scripting:{executeScript:async()=>{called=true;}}}}),/切换/);assert.equal(called,false);
+});
+
+test('focus and unrelated tabs never restart account detection; refresh does not force hover',async()=>{
+ const calls=[];const f=ui({read:async(id,args)=>{calls.push(args.readIdentity);return{tabId:id,role:'design',frontend:{companyDisplayName:'Fixture account'}};}});await flush();
+ for(let i=0;i<5;i++){f.windowListeners.focus();f.listeners.updated(99,{status:'loading'},{url:'https://unrelated.example/'});f.listeners.created({id:100,url:'https://unrelated.example/'});}
+ await flush();assert.deepEqual(calls,[false]);await f.panel.refresh();assert.deepEqual(calls,[false,false]);await f.panel.selected(true);assert.deepEqual(calls,[false,false,true]);f.panel.dispose();
+});
+test('repeated manual account clicks merge while detection is in progress',async()=>{
+ let release,count=0;const f=ui({read:async(id,{readIdentity})=>{count++;if(readIdentity)await new Promise(r=>{release=r;});return{tabId:id,role:'design',frontend:{companyDisplayName:'Fixture account'}};}});await flush();
+ const a=f.panel.selected(true),b=f.panel.selected(true);assert.equal(a,b);assert.equal(f.elements.get('readIdentity').disabled,true);assert.equal(count,2);release();await a;assert.equal(f.elements.get('readIdentity').disabled,false);f.panel.dispose();
+});
+test('initial page selection prefers the active designer over an earlier backend tab',async()=>{
+ const f=ui({activeTabId:7,pages:[{tabId:1,role:'config',connected:true},{tabId:7,role:'design',connected:true}]});await flush();assert.equal(f.elements.get('pages').value,'7');assert.equal(f.elements.get('company').textContent,'示例企业');f.panel.dispose();
+});
+
+test('page and account ID stay available in an ordinary design workspace',async()=>{
+ const f=ui({read:async id=>({tabId:id,role:'design',frontend:{companyDisplayName:'Fixture account',visibleAccountId:'FIXTURE_ID',workspace:{stage:'design',drawingOpen:false,hint:'效果验证前打开图纸&清单'}}})});await flush();assert.equal(f.elements.get('accountId').textContent,'FIXTURE_ID');assert.equal(f.elements.get('workspace').textContent,'未进入施工图');assert.match(f.elements.get('validationHint').textContent,/效果验证/);assert.equal(f.elements.get('readIdentity').disabled,false);f.panel.dispose();
 });

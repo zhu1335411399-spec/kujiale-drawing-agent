@@ -18,7 +18,7 @@ export async function readFrontendIdentity({chromeApi,tabId,args}) {
   }
   const probe=probes.find(p=>(p.frameId??0)===(args.frameId??0));
   if(!probe?.result)throw Error('Frontend identity read returned no result');
-  if(chromeApi.storage?.session){
+  if(chromeApi.storage?.session&&args.cacheResult!==false){
     await chromeApi.storage.session.set({['frontendIdentity:'+tabId]:{url:tab.url,readAt:Date.now(),value:probe.result}});
   }
   return{tabId,frameId:probe.frameId??0,...probe.result};
