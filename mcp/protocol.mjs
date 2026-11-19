@@ -2,6 +2,7 @@ import { workflowInstructions } from './workflow.mjs';
 import { tools, validateCall } from './tools.mjs';
 import { dispatchLineStyleTool } from './line-style-dispatch.mjs';
 import { dispatchAnnotationTool } from './annotation-dispatch.mjs';
+import { dispatchObjectTool } from './object-dispatch.mjs';
 
 export const versions = ['2025-03-26', '2025-06-18', '2025-11-25'];
 
@@ -34,6 +35,14 @@ export function createProtocol(broker) {
           catch (error) { return fail(-32602, error.message); }
           try {
             const name = request.params.name;
+            if(name==='drawing_inspect_frontend_drawing'){
+              const value=await broker.page(args.pageId,'frontend-identity',{...args,action:'inspect',drawingTask:'inspect'});
+              result={content:[{type:'text',text:JSON.stringify(value)}]};break;
+            }
+            if(['drawing_inspect_object_config','drawing_update_object_properties','drawing_replace_object_line_style','drawing_save_object_config'].includes(name)){
+              const value=await dispatchObjectTool(broker,name,args);
+              result={...(!['object-config-observed','object-properties-observed','object-fields-verified','object-save-verified'].includes(value.status)?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(value)}]};break;
+            }
             if(['drawing_search_annotation_styles','drawing_create_annotation_style','drawing_update_annotation_style','drawing_save_annotation_styles'].includes(name)){
               const value=await dispatchAnnotationTool(broker,name,args);const ok=['annotation-search-read','annotation-fields-verified','annotation-save-verified'].includes(value.status);
               result={...(!ok?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(value)}]};break;
