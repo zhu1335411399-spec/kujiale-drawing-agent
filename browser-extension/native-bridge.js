@@ -1,3 +1,4 @@
+import {captureFrontendView} from './frontend-capture.js';
 import { pageRole } from './pages.js';
 import { readDrawingApi } from './read-api.js';
 import { readEncryptedConfig } from './read-encrypted-config.js';
@@ -132,6 +133,8 @@ export async function collectLineOptions() {
 }
 
 export async function perform(task) {
+  if(task.operation==='frontend-capture'){if(collectingOptions)throw Error('Another operation is running');collectingOptions=true;try{return await captureFrontendView({chromeApi:chrome,tabId:task.args.tabId,args:task.args});}finally{collectingOptions=false;}}
+
   if(task.operation==='frontend-account'){
     const args=task.args;if(browserProfileScope().browser!==args.expectedBrowser)throw Error('Connected browser family does not match');
     const value=await frontendAccountReader().read(args.tabId,{force:args.refresh===true});

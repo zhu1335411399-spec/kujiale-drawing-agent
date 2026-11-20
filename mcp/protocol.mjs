@@ -35,6 +35,9 @@ export function createProtocol(broker) {
           catch (error) { return fail(-32602, error.message); }
           try {
             const name = request.params.name;
+            if(name==='drawing_capture_frontend_view'){
+              try{const value=await broker.page(args.pageId,'frontend-capture',args);const {imageDataUrl,...metadata}=value;const match=imageDataUrl&&/^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]*={0,2})$/.exec(imageDataUrl);if(value.captured&&!match)throw Error('Screenshot returned an invalid image format');result={...(value.status!=='frontend-view-captured'?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(metadata)},...(match?[{type:'image',mimeType:'image/'+match[1],data:match[2]}]:[])]};}catch(error){if(!/Unsupported readonly operation/.test(error.message))throw error;result={isError:true,content:[{type:'text',text:JSON.stringify({status:'extension-reload-required',captured:false,effectVerified:false,message:'已加载的扩展尚无浏览器画面读取模块；请仅重新加载目标设计浏览器的施工图扩展一次。普通画布导出全黑不能用于效果验收。'})}]};}break;
+            }
             if(name==='drawing_sync_frontend_configuration'){
               const value=await broker.page(args.pageId,'frontend-identity',{...args,syncTask:args.action,action:'hover',frameId:0,cacheResult:false});result={...(!['frontend-sync-inspected','frontend-config-update-observed','frontend-sync-unconfirmed'].includes(value.status)?{isError:true}:{}),content:[{type:'text',text:JSON.stringify(value)}]};break;
             }

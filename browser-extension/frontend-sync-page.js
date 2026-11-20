@@ -8,7 +8,8 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
  const dialogs=()=>{const a=nodes('[role="dialog"],.tui-modal-content,.ant-modal-content');return a.filter(n=>!a.some(x=>x!==n&&n.contains(x)));};
  const templateDialog=()=>dialogs().filter(n=>text(n).startsWith('切换施工图模板')&&text(n).includes('当前使用的是「'));
  const click=n=>{const r=n.getBoundingClientRect();for(const type of ['mousedown','mouseup'])n.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,view:window}));n.click();};
- const brief=()=>dialogs().map(n=>({text:text(n).slice(0,4000),buttons:nodes('button',n).map(text)}));
+ const brief=()=>dialogs().map(n=>({text:text(n).slice(0,4000),buttons:nodes('button',n).map(text),checkboxes:nodes('input[type="checkbox"],[role="checkbox"]',n).map(x=>({checked:typeof x.checked==='boolean'?x.checked:x.getAttribute('aria-checked'),label:text(x.closest('label')||x.parentElement),html:x.parentElement?.outerHTML?.slice(0,2500)}))}));
+ const isSuccess=t=>/^(?:配置更新成功|更新配置成功|更新成功|配置已更新|配置更新完成|成功应用最新配置)[！!。]?$/.test(t);
  const records=globalThis.__drawingFrontendSyncRecords||(globalThis.__drawingFrontendSyncRecords=new Map());
  let record;
  try{
@@ -40,7 +41,7 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
    return{...result,status:'frontend-sync-inspected',template:record.template,dialogs:brief()};
   }
   if(!record)throw Error('Inspect the target enterprise template before refreshing configuration');
-  const outcome=()=>({...result,status:record.notice?'frontend-config-update-observed':'frontend-sync-unconfirmed',configurationUpdated:!!record.notice,phase:record.phase,template:record.template,updateNotice:record.notice||null,noticeCandidates:record.notices||[],dialogs:brief()});
+  const outcome=()=>{if(record.attempted&&!record.notice){const fresh=record.notices?.find(isSuccess);if(fresh){record.notice=fresh;record.phase='update-observed';}}return({...result,status:record.notice?'frontend-config-update-observed':'frontend-sync-unconfirmed',configurationUpdated:!!record.notice,phase:record.phase,template:record.template,updateNotice:record.notice||null,noticeCandidates:record.notices||[],dialogs:brief()});};
   if(o.syncTask==='verify')return outcome();
   if(o.syncTask==='update'){
    if(record.attempted)return{...outcome(),executed:false,submissionRepeated:false};
@@ -55,15 +56,16 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
    const target=small[0].closest('.tuipro-selectmenu-icon-item-wrapper-incontext')||small[0];
    record.attempted=true;record.phase='update-click-attempted';record.notices=[];
    const prior=new Set(nodes('div,span,p').map(text).filter(t=>t&&t.length<100));
-   const observe=()=>{for(const n of nodes('div,span,p,[role="alert"]')){const t=text(n);if(t.length>100||prior.has(t)||!/更新|配置/.test(t))continue;if(!record.notices.includes(t))record.notices.push(t);if(/^(?:配置更新成功|更新配置成功|更新成功|配置已更新|配置更新完成)[！!。]?$/.test(t)){record.notice=t;record.phase='update-observed';}}};
+   const observe=()=>{for(const n of nodes('div,span,p,[role="alert"]')){const t=text(n);if(t.length>100||prior.has(t)||!/更新|配置/.test(t))continue;if(!record.notices.includes(t))record.notices.push(t);if(isSuccess(t)){record.notice=t;record.phase='update-observed';}}};
    record.startWatching=()=>{const observer=new MutationObserver(observe);observer.observe(document.body,{childList:true,subtree:true,characterData:true});setTimeout(()=>observer.disconnect(),15000);};record.startWatching();click(target);result.executed=true;
    for(let i=0;i<35&&!record.notice;i++){await wait(100);observe();if(dialogs().length)break;}
    const dsAfter=dialogs();if(dsAfter.length===1&&text(dsAfter[0]).includes('更新配置')){record.phase='awaiting-confirmation';record.dialogText=text(dsAfter[0]);}
    record.result=outcome();return record.result;
   }
   if(record.phase!=='awaiting-confirmation'||record.confirmAttempted)throw Error('No fresh update confirmation is available; do not resubmit');
-  const ds=dialogs();if(ds.length!==1||text(ds[0])!==record.dialogText||/全部重新生成|覆盖.*手动|清空|删除/.test(record.dialogText))throw Error('Refresh confirmation is unknown or affects additional work');
-  const buttons=nodes('button',ds[0]).filter(n=>['更新','确定'].includes(text(n))&&!n.disabled);if(buttons.length!==1)throw Error('Unique observed update confirmation required');
+  const ds=dialogs();if(ds.length!==1||text(ds[0])!==record.dialogText||/覆盖.*手动|清空|删除/.test(record.dialogText))throw Error('Refresh confirmation is unknown or affects additional work');
+  if(record.dialogText.includes('全部重新生成')){const options=nodes('input[type="checkbox"],[role="checkbox"]',ds[0]).filter(n=>text(n.closest('label')||n.parentElement)==='全部重新生成');if(options.length!==1||(typeof options[0].checked==='boolean'?options[0].checked:options[0].getAttribute('aria-checked')!=='false')!==false)throw Error('Refresh confirmation is unknown or affects additional work');result.fullRegenerationSelected=false;}
+  const buttons=nodes('button',ds[0]).filter(n=>['更新','确定','开始更新'].includes(text(n))&&!n.disabled);if(buttons.length!==1)throw Error('Unique observed update confirmation required');
   record.confirmAttempted=true;record.phase='confirmation-click-attempted';record.startWatching?.();click(buttons[0]);result.executed=true;await wait(800);return outcome();
  }catch(e){return{...result,error:e.message,phase:record?.phase,dialogs:brief()};}
 };

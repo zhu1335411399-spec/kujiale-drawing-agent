@@ -31,6 +31,7 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
     if(!['inspect','hover'].includes(options.action))throw Error('Invalid identity-read action');
     if(browser!==options.expectedBrowser)throw Error('Connected browser family does not match the selected browser');
     result.workspace=workspace();
+    if(options.captureTask)return globalThis.__drawingCaptureFrontendView(options);
     if(options.syncTask)return globalThis.__drawingSyncFrontendConfig(options);
     if(options.navigationTask){
       const proof=globalThis.__drawingAccountDisplayProof;
@@ -65,7 +66,7 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
       result.fields=n('input,select,textarea,[role="combobox"],[role="switch"]').filter(x=>!['password','hidden'].includes(x.getAttribute('type'))&&!/password|token|secret|authorization/i.test((x.id||'')+' '+(x.getAttribute('name')||''))).slice(0,50).map(x=>({tag:x.tagName,type:x.getAttribute('type'),value:x.value??null,placeholder:x.getAttribute('placeholder'),label:x.getAttribute('aria-label'),context:text(x.parentElement).slice(0,220)}));
       result.templateControls=n('.tui-select,.ant-select,[role="listbox"]').slice(0,25).map(x=>({text:text(x).slice(0,220),context:text(x.parentElement).slice(0,300),classes:x.getAttribute('class')}));
       result.dialogs=n('[role="dialog"],.ant-modal-content,.tui-modal-content').map(x=>({text:text(x).slice(0,5000),buttons:[...x.querySelectorAll('button')].filter(visible).map(text)}));
-      return{...result,status:options.navigationTask?'frontend-navigation-observed':'frontend-drawing-observed',title:document.title,text:text(document.body).slice(0,14000),navigationCandidates:entries.slice(0,35).map(x=>({label:text(x),tag:x.tagName,classes:x.getAttribute('class'),bounds:rect(x),ancestors:(()=>{const a=[];for(let p=x,i=0;p&&p!==document.body&&i<5;p=p.parentElement,i++)a.push({tag:p.tagName,classes:p.getAttribute('class'),role:p.getAttribute('role'),html:i===3?p.outerHTML.slice(0,9000):undefined});return a;})(),html:(x.closest('.tuipro-secondary-toolbar-item')||x.parentElement)?.outerHTML.slice(0,3000)})),iconEvidence,navigationEvidence:nav.slice(0,20).map(x=>({label:text(x),html:x.parentElement?.parentElement?.outerHTML.slice(0,6000)})),buttons:n('button,[role="button"],a').map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),disabled:!!x.disabled})).filter(x=>x.label||x.title||x.ariaLabel).slice(0,130),images:n('img').slice(0,40).map(x=>({alt:x.alt,title:x.getAttribute('title'),classes:x.getAttribute('class'),bounds:rect(x)})),labels:n('[title],[aria-label]').slice(0,100).map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),classes:x.getAttribute('class')})),frames:n('iframe').map(x=>({title:x.title,src:(()=>{try{const u=new URL(x.src,location.href);return u.origin+u.pathname}catch{return null}})()}))};
+      return{...result,status:options.navigationTask?'frontend-navigation-observed':'frontend-drawing-observed',title:document.title,text:text(document.body).slice(0,14000),viewEntries:n('span,div,a').filter(exposed).filter(x=>['厨卫柜体图纸','厨卫图纸','全屋家具柜体图纸','全屋家具空间图纸','平面布置图','编辑视图'].includes(text(x))).filter(x=>![...x.children].some(c=>text(c)===text(x))).map(x=>({label:text(x),classes:x.getAttribute('class'),html:x.parentElement?.parentElement?.outerHTML.slice(0,4500)})),renderSurfaces:n('canvas,svg').filter(exposed).filter(x=>{const r=x.getBoundingClientRect();return r.width>=200&&r.height>=150;}).map(x=>({tag:x.tagName,id:x.id,classes:x.getAttribute('class'),bounds:rect(x),width:x.getAttribute('width'),height:x.getAttribute('height'),parents:(()=>{const a=[];for(let p=x.parentElement,i=0;p&&p!==document.body&&i<4;p=p.parentElement,i++)a.push({tag:p.tagName,classes:p.getAttribute('class'),id:p.id});return a;})(),strokeColors:x.tagName.toLowerCase()==='svg'?[...x.querySelectorAll('path,line,polyline,polygon')].slice(0,5000).reduce((a,n)=>{const c=n.getAttribute('stroke')||getComputedStyle(n).stroke;if(c&&c!=='none')a[c]=(a[c]||0)+1;return a;},{}):null})),navigationCandidates:entries.slice(0,35).map(x=>({label:text(x),tag:x.tagName,classes:x.getAttribute('class'),bounds:rect(x),ancestors:(()=>{const a=[];for(let p=x,i=0;p&&p!==document.body&&i<5;p=p.parentElement,i++)a.push({tag:p.tagName,classes:p.getAttribute('class'),role:p.getAttribute('role'),html:i===3?p.outerHTML.slice(0,9000):undefined});return a;})(),html:(x.closest('.tuipro-secondary-toolbar-item')||x.parentElement)?.outerHTML.slice(0,3000)})),iconEvidence,navigationEvidence:nav.slice(0,20).map(x=>({label:text(x),html:x.parentElement?.parentElement?.outerHTML.slice(0,6000)})),buttons:n('button,[role="button"],a').map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),disabled:!!x.disabled})).filter(x=>x.label||x.title||x.ariaLabel).slice(0,130),images:n('img').slice(0,40).map(x=>({alt:x.alt,title:x.getAttribute('title'),classes:x.getAttribute('class'),bounds:rect(x)})),labels:n('[title],[aria-label]').slice(0,100).map(x=>({label:text(x).slice(0,100),title:x.getAttribute('title'),ariaLabel:x.getAttribute('aria-label'),classes:x.getAttribute('class')})),frames:n('iframe').map(x=>({title:x.title,src:(()=>{try{const u=new URL(x.src,location.href);return u.origin+u.pathname}catch{return null}})()}))};
     }
     if(options.expectedCompanyName!==undefined&&(!options.expectedCompanyName?.trim()||options.expectedCompanyName.length>200))throw Error('Invalid expected company display name');
     const nodes=candidateNodes();
@@ -132,6 +133,34 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
   }catch(error){return{...result,status:'identity-read-failed',error:error.message};}
 };
 // BEGIN GENERATED FRONTEND CONFIG SYNC
+// Export only the currently exposed drawing canvas. No app internals, browser tabs or unrelated windows.
+globalThis.__drawingCaptureFrontendView=async function(o){
+ const result={status:'frontend-capture-blocked',captured:false,effectVerified:false,saved:false,published:false,documentVisibility:document.visibilityState,platformCapture:{runtimeReload:typeof globalThis.chrome?.runtime?.reload==='function',debugger:typeof globalThis.chrome?.debugger?.attach==='function',tabsCapture:typeof globalThis.chrome?.tabs?.captureVisibleTab==='function'}};
+ try{
+  const proof=globalThis.__drawingAccountDisplayProof;
+  if(!proof||proof.url!==location.href||proof.documentEpoch!==performance.timeOrigin||proof.companyDisplayName!==o.expectedCompanyName?.trim()||document.title!==o.expectedTitle)throw Error('Confirm the displayed account and design document before capture');
+  const visible=n=>{if(!n?.getClientRects().length)return false;const r=n.getBoundingClientRect();if(r.width<=0||r.height<=0||r.x+r.width<=0||r.y+r.height<=0||r.x>=innerWidth||r.y>=innerHeight)return false;for(let p=n;p&&p!==document.body;p=p.parentElement){const s=getComputedStyle(p);if(s.display==='none'||s.visibility==='hidden'||s.opacity==='0')return false;}return true;};
+  const exposed=n=>{if(!visible(n))return false;const r=n.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return!!top&&(top===n||n.contains(top)||(top!==document.body&&top!==document.documentElement&&top.contains(n)));};
+  if([...document.querySelectorAll('[role="dialog"],.tui-modal-content,.ant-modal-content')].some(visible))throw Error('Close the dialog before capturing a drawing');
+  const candidates=[...document.querySelectorAll('canvas')].filter(exposed).filter(n=>n.closest('[id^="scene2d-"]')&&n.getBoundingClientRect().width>=200&&n.getBoundingClientRect().height>=150&&n.width>0&&n.height>0);
+  if(candidates.length!==1)throw Error('One exposed drawing canvas is required');
+  const source=candidates[0],r=source.getBoundingClientRect();
+  if(o.captureTask==='inspect')return{...result,status:'frontend-capture-ready',documentEpoch:performance.timeOrigin,sceneId:source.closest('[id^="scene2d-"]').id,bounds:{x:r.x,y:r.y,width:r.width,height:r.height},viewport:{width:innerWidth,height:innerHeight,devicePixelRatio:globalThis.devicePixelRatio||1},accountEvidence:{companyDisplayName:proof.companyDisplayName,checkedAt:new Date(proof.checkedAt).toISOString(),stale:Date.now()-proof.checkedAt>30000,sameDocument:true,identityVerified:false}};
+  const output=document.createElement('canvas'),ratio=Math.min(1,1280/Math.max(source.width,source.height));
+  output.width=Math.round(source.width*ratio);output.height=Math.round(source.height*ratio);
+  const context=output.getContext('2d',{willReadFrequently:true});if(!context)throw Error('Canvas export is unavailable');
+  await new Promise(resolve=>{let done=false;const finish=()=>{if(!done){done=true;resolve();}};setTimeout(finish,500);requestAnimationFrame(finish);});
+  context.drawImage(source,0,0,output.width,output.height);
+  const pixels=context.getImageData(0,0,output.width,output.height).data;let red=0,ink=0,opaque=0,different=false;
+  for(let i=0;i<pixels.length;i+=4){if(pixels[i]!==pixels[0]||pixels[i+1]!==pixels[1]||pixels[i+2]!==pixels[2]||pixels[i+3]!==pixels[3])different=true;if(pixels[i+3]<20)continue;opaque++;if(pixels[i]<245||pixels[i+1]<245||pixels[i+2]<245)ink++;if(pixels[i]>180&&pixels[i+1]<100&&pixels[i+2]<100)red++;}
+  if(!opaque)throw Error('Canvas export is transparent; no drawing pixels were captured');
+  if(!different)throw Error('Canvas export is a uniform frame; rendered geometry was not captured');
+  let image=output.toDataURL('image/png');for(const q of [.8,.6,.4]){if(image.length<=200000)break;image=output.toDataURL('image/jpeg',q);}
+  if(image.length>200000)throw Error('Canvas export exceeds the bounded bridge response size');
+  return{...result,status:'frontend-view-captured',captured:true,title:document.title,readAt:new Date().toISOString(),sceneId:source.closest('[id^="scene2d-"]').id,bounds:{x:r.x,y:r.y,width:r.width,height:r.height},imageWidth:output.width,imageHeight:output.height,imageDataUrl:image,pixelSummary:{opaquePixels:opaque,nonWhitePixels:ink,redPixels:red},accountEvidence:{companyDisplayName:proof.companyDisplayName,checkedAt:new Date(proof.checkedAt).toISOString(),stale:Date.now()-proof.checkedAt>30000,sameDocument:true,identityVerified:false}};
+ }catch(error){return{...result,error:error.message};}
+};
+
 // Fixed configuration refresh in the customer's drawing workspace. Never switches templates or publishes.
 globalThis.__drawingSyncFrontendConfig=async function(o){
  const result={status:'frontend-sync-blocked',configurationUpdated:false,effectVerified:false,saved:false,published:false,executed:false};
@@ -142,7 +171,8 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
  const dialogs=()=>{const a=nodes('[role="dialog"],.tui-modal-content,.ant-modal-content');return a.filter(n=>!a.some(x=>x!==n&&n.contains(x)));};
  const templateDialog=()=>dialogs().filter(n=>text(n).startsWith('切换施工图模板')&&text(n).includes('当前使用的是「'));
  const click=n=>{const r=n.getBoundingClientRect();for(const type of ['mousedown','mouseup'])n.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,button:0,clientX:r.x+r.width/2,clientY:r.y+r.height/2,view:window}));n.click();};
- const brief=()=>dialogs().map(n=>({text:text(n).slice(0,4000),buttons:nodes('button',n).map(text)}));
+ const brief=()=>dialogs().map(n=>({text:text(n).slice(0,4000),buttons:nodes('button',n).map(text),checkboxes:nodes('input[type="checkbox"],[role="checkbox"]',n).map(x=>({checked:typeof x.checked==='boolean'?x.checked:x.getAttribute('aria-checked'),label:text(x.closest('label')||x.parentElement),html:x.parentElement?.outerHTML?.slice(0,2500)}))}));
+ const isSuccess=t=>/^(?:配置更新成功|更新配置成功|更新成功|配置已更新|配置更新完成|成功应用最新配置)[！!。]?$/.test(t);
  const records=globalThis.__drawingFrontendSyncRecords||(globalThis.__drawingFrontendSyncRecords=new Map());
  let record;
  try{
@@ -174,7 +204,7 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
    return{...result,status:'frontend-sync-inspected',template:record.template,dialogs:brief()};
   }
   if(!record)throw Error('Inspect the target enterprise template before refreshing configuration');
-  const outcome=()=>({...result,status:record.notice?'frontend-config-update-observed':'frontend-sync-unconfirmed',configurationUpdated:!!record.notice,phase:record.phase,template:record.template,updateNotice:record.notice||null,noticeCandidates:record.notices||[],dialogs:brief()});
+  const outcome=()=>{if(record.attempted&&!record.notice){const fresh=record.notices?.find(isSuccess);if(fresh){record.notice=fresh;record.phase='update-observed';}}return({...result,status:record.notice?'frontend-config-update-observed':'frontend-sync-unconfirmed',configurationUpdated:!!record.notice,phase:record.phase,template:record.template,updateNotice:record.notice||null,noticeCandidates:record.notices||[],dialogs:brief()});};
   if(o.syncTask==='verify')return outcome();
   if(o.syncTask==='update'){
    if(record.attempted)return{...outcome(),executed:false,submissionRepeated:false};
@@ -189,15 +219,16 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
    const target=small[0].closest('.tuipro-selectmenu-icon-item-wrapper-incontext')||small[0];
    record.attempted=true;record.phase='update-click-attempted';record.notices=[];
    const prior=new Set(nodes('div,span,p').map(text).filter(t=>t&&t.length<100));
-   const observe=()=>{for(const n of nodes('div,span,p,[role="alert"]')){const t=text(n);if(t.length>100||prior.has(t)||!/更新|配置/.test(t))continue;if(!record.notices.includes(t))record.notices.push(t);if(/^(?:配置更新成功|更新配置成功|更新成功|配置已更新|配置更新完成)[！!。]?$/.test(t)){record.notice=t;record.phase='update-observed';}}};
+   const observe=()=>{for(const n of nodes('div,span,p,[role="alert"]')){const t=text(n);if(t.length>100||prior.has(t)||!/更新|配置/.test(t))continue;if(!record.notices.includes(t))record.notices.push(t);if(isSuccess(t)){record.notice=t;record.phase='update-observed';}}};
    record.startWatching=()=>{const observer=new MutationObserver(observe);observer.observe(document.body,{childList:true,subtree:true,characterData:true});setTimeout(()=>observer.disconnect(),15000);};record.startWatching();click(target);result.executed=true;
    for(let i=0;i<35&&!record.notice;i++){await wait(100);observe();if(dialogs().length)break;}
    const dsAfter=dialogs();if(dsAfter.length===1&&text(dsAfter[0]).includes('更新配置')){record.phase='awaiting-confirmation';record.dialogText=text(dsAfter[0]);}
    record.result=outcome();return record.result;
   }
   if(record.phase!=='awaiting-confirmation'||record.confirmAttempted)throw Error('No fresh update confirmation is available; do not resubmit');
-  const ds=dialogs();if(ds.length!==1||text(ds[0])!==record.dialogText||/全部重新生成|覆盖.*手动|清空|删除/.test(record.dialogText))throw Error('Refresh confirmation is unknown or affects additional work');
-  const buttons=nodes('button',ds[0]).filter(n=>['更新','确定'].includes(text(n))&&!n.disabled);if(buttons.length!==1)throw Error('Unique observed update confirmation required');
+  const ds=dialogs();if(ds.length!==1||text(ds[0])!==record.dialogText||/覆盖.*手动|清空|删除/.test(record.dialogText))throw Error('Refresh confirmation is unknown or affects additional work');
+  if(record.dialogText.includes('全部重新生成')){const options=nodes('input[type="checkbox"],[role="checkbox"]',ds[0]).filter(n=>text(n.closest('label')||n.parentElement)==='全部重新生成');if(options.length!==1||(typeof options[0].checked==='boolean'?options[0].checked:options[0].getAttribute('aria-checked')!=='false')!==false)throw Error('Refresh confirmation is unknown or affects additional work');result.fullRegenerationSelected=false;}
+  const buttons=nodes('button',ds[0]).filter(n=>['更新','确定','开始更新'].includes(text(n))&&!n.disabled);if(buttons.length!==1)throw Error('Unique observed update confirmation required');
   record.confirmAttempted=true;record.phase='confirmation-click-attempted';record.startWatching?.();click(buttons[0]);result.executed=true;await wait(800);return outcome();
  }catch(e){return{...result,error:e.message,phase:record?.phase,dialogs:brief()};}
 };

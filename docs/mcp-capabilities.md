@@ -30,4 +30,4 @@
 不上传登录凭据、会话标识、真实配置 JSON、采集正文、Node 二进制或本机运行日志。
 本文档与源码更新不修改历史发布包；不代表已安装为当前 ChatGPT 个人技能。
 
-前端配置更新新增受限工具 drawing_sync_frontend_configuration，当前仅实现和回归，实际设计端离线，未取得业务更新结果；见 [验收边界](../skills/kujiale-drawing-bridge/references/frontend-sync.md)。定制厨柜浅底轮廓线的独立红色样式及继承后代已完成保存、刷新回读，不能替代前端效果验收。
+前端配置更新新增受限工具 drawing_sync_frontend_configuration，已实际完成配置更新并观察到成功提示，全部重新生成保持未勾选；见 [验收边界](../skills/kujiale-drawing-bridge/references/frontend-sync.md)。定制厨柜浅底轮廓线已保存回读；普通画布导出得到全黑，新增 drawing_capture_frontend_view 浏览器截图后台模块待加载实测，不能将这些结果当作前端颜色已验收。

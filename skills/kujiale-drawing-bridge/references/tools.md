@@ -9,7 +9,8 @@
 | 指定对象属性编辑 | drawing_update_object_properties | 三属性原值、继承模式、真分类 ID 绑定 |
 | 对象线样式引用替换 | drawing_replace_object_line_style | 浅深主题、原单元格、完整候选分页与唯一名称 |
 | 对象回执保存 | drawing_save_object_config | 客户确认、保存时间更新、刷新并重载原客户回读 |
-| 前端配置更新（待实测） | drawing_sync_frontend_configuration | [受限更新流程](frontend-sync.md)，不把提交当作效果验证 |
+| 前端配置更新 | drawing_sync_frontend_configuration | [受限更新流程](frontend-sync.md)，不把提交当作效果验证 |
+| 前端图纸画面读取（后台模块待加载） | drawing_capture_frontend_view | [受限截图](frontend-capture.md)，MCP 图像输出，不能单凭像素判定效果 |
 | 前端固定入口导航 | drawing_frontend_navigation | 仅打开图纸菜单、施工图工作区和设置；不切换模板或更新配置 |
 | 前端图纸结构只读识别 | drawing_inspect_frontend_drawing | 不能代替账号、模板或生效验收 |
 | 当前页线样式读取 | drawing_list_line_styles | [线样式合同](line-styles.md) |
@@ -25,5 +26,5 @@
 | 前端账号及工作区状态 | drawing_read_frontend_account | 普通设计端可读账号；共享缓存，明确 refresh 才重测 |
 | 通用保存、发布 | drawing_save_config、drawing_publish_config | 仅目标核对，返回未执行 |
 
-前端配置更新入口已实现但尚未完成真实验收；自动标注、另存为、出图和恢复尚无已验证的自动执行工具。线样式复制、删除和批量导入仍待适配；对象引用的局部验证不代表其他分类的引用已支持。接口研究及实验工具不作为日常工作流入口。
+前端配置更新已真实取得成功提示，画面读取新模块仍待扩展重载后实测；自动标注、另存为、出图和恢复尚无已验证的自动执行工具。线样式复制、删除和批量导入仍待适配；对象引用的局部验证不代表其他分类的引用已支持。接口研究及实验工具不作为日常工作流入口。
 

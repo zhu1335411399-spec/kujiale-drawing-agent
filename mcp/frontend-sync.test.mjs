@@ -8,7 +8,7 @@ function fixture(){
  const url='https://www.kujiale.com/tool/h5/bim',clicks=[];
  const dialog={innerText:'切换施工图模板 当前使用的是「Fixture template」 企业模板 Fixture template 当前 默认 更新于 2026-11-19 12:00:00 行业模板 System',getClientRects:()=>[{}],contains:n=>n===dialog,querySelectorAll:()=>[]};
  const body={};const document={body,documentElement:{},title:'Fixture design',querySelectorAll:s=>s.startsWith('[role="dialog"]')?[dialog]:[]};
- const box={document,location:{href:url},performance:{timeOrigin:10},getComputedStyle:()=>({visibility:'visible'}),__drawingAccountDisplayProof:{url,documentEpoch:10,companyDisplayName:'Fixture company',checkedAt:Date.now()},setTimeout:f=>f()};
+ const box={document,window:{},MouseEvent:class{constructor(type){this.type=type;}},location:{href:url},performance:{timeOrigin:10},getComputedStyle:()=>({visibility:'visible'}),__drawingAccountDisplayProof:{url,documentEpoch:10,companyDisplayName:'Fixture company',checkedAt:Date.now()},setTimeout:f=>f()};
  vm.runInNewContext(script,box);
  const args={expectedBrowser:'Edge',expectedCompanyName:'Fixture company',expectedTitle:'Fixture design',expectedTemplateName:'Fixture template',requestId:'fixture_sync_01'};
  return{box,args,dialog,clicks,run:action=>box.__drawingSyncFrontendConfig({...args,syncTask:action})};
@@ -26,6 +26,21 @@ test('a refresh is never resubmitted, and expired inspection cannot start a new 
 test('confirmation with extra regeneration or manual overwrite scope is not accepted',async()=>{
  const f=fixture();await f.run('inspect');const rec=f.box.__drawingFrontendSyncRecords.get(f.args.requestId);rec.phase='awaiting-confirmation';f.dialog.innerText='更新配置 全部重新生成';rec.dialogText=f.dialog.innerText;
  const r=await f.run('confirm');assert.equal(r.executed,false);assert.match(r.error,/additional work/);
+});
+test('the observed start-update button is allowed only while full regeneration is explicitly unchecked',async()=>{
+ for(const checked of [false,true]){const f=fixture();await f.run('inspect');let clicks=0;const label={innerText:'全部重新生成'};
+  const checkbox={checked,getClientRects:()=>[{}],closest:()=>label,parentElement:label};
+  const button={innerText:'开始更新',disabled:false,getClientRects:()=>[{}],getBoundingClientRect:()=>({x:10,y:10,width:30,height:20}),dispatchEvent(){},click(){clicks++;}};
+  f.dialog.innerText='更新配置 全部重新生成 取消 开始更新';f.dialog.querySelectorAll=s=>s==='button'?[button]:s.startsWith('input')?[checkbox]:[];
+  const rec=f.box.__drawingFrontendSyncRecords.get(f.args.requestId);rec.phase='awaiting-confirmation';rec.dialogText=f.dialog.innerText;
+  const r=await f.run('confirm');assert.equal(clicks,checked?0:1);assert.equal(r.configurationUpdated,false);assert.equal(checkbox.checked,checked);
+  if(!checked){assert.equal(r.fullRegenerationSelected,false);await f.run('confirm');assert.equal(clicks,1);}
+ }
+});
+test('a newly captured real success phrase can verify only the submitted task',async()=>{
+ const f=fixture();await f.run('inspect');const rec=f.box.__drawingFrontendSyncRecords.get(f.args.requestId);rec.notices=['成功应用最新配置'];
+ assert.equal((await f.run('verify')).configurationUpdated,false);rec.attempted=true;rec.confirmAttempted=true;
+ const v=await f.run('verify');assert.equal(v.configurationUpdated,true);assert.equal(v.updateNotice,'成功应用最新配置');assert.equal(v.effectVerified,false);
 });
 test('historical account evidence cannot start a configuration refresh',async()=>{
  const f=fixture();await f.run('inspect');f.box.__drawingAccountDisplayProof.checkedAt=Date.now()-130000;
