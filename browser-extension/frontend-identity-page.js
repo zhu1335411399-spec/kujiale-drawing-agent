@@ -33,6 +33,30 @@ globalThis.__drawingReadFrontendIdentity=async function(options){
     result.workspace=workspace();
     if(options.captureTask)return globalThis.__drawingCaptureFrontendView(options);
     if(options.syncTask)return globalThis.__drawingSyncFrontendConfig(options);
+    if(options.navigationTask==='refresh-account-in-drawing'){
+      if(document.title!==options.expectedTitle)throw Error('Current design title changed before account refresh');
+      const before=workspace(),originalUrl=location.href,epoch=performance.timeOrigin;
+      if(!['drawing-editor','drawing-layout'].includes(before.stage))throw Error('Select an open drawing workspace before refreshing its account');
+      const dialogs=()=>[...document.querySelectorAll('[role="dialog"],.ant-modal-content,.tui-modal-content')].filter(visible);
+      if(dialogs().length)throw Error('Close the current dialog before leaving the drawing workspace');
+      const exits=[...document.querySelectorAll('i.tuipro-topbar-fixed-cancelicon')].filter(exposed);
+      if(exits.length!==1)throw Error('Unique drawing exit was not observed');
+      const exit=exits[0].closest('button')||exits[0];exit.click();
+      for(let i=0;i<20&&workspace().drawingOpen&&!dialogs().length;i++)await new Promise(r=>setTimeout(r,100));
+      if(dialogs().length)throw Error('Drawing exit needs review; no confirmation was clicked');
+      if(location.href!==originalUrl||performance.timeOrigin!==epoch||workspace().drawingOpen)throw Error('Drawing exit was not observed in the same design document');
+      const inspect=await globalThis.__drawingReadFrontendIdentity({...options,navigationTask:undefined,drawingTask:undefined,action:'inspect'});
+      const avatars=inspect.avatarCandidates?.filter(x=>x.accountAvatar);
+      if(avatars?.length!==1)throw Error('A unique account avatar was not observed on the design page');
+      const account=await globalThis.__drawingReadFrontendIdentity({...options,navigationTask:undefined,drawingTask:undefined,action:'hover',avatarKey:avatars[0].avatarKey});
+      if(account.status!=='display-name-match')return{...account,status:'account-refresh-unconfirmed',navigationOutcome:'unconfirmed',workspace:workspace(),message:'设计页账号与预期不一致或无法确认；已停在设计页。'};
+      const menu=await globalThis.__drawingReadFrontendIdentity({...options,navigationTask:'open-drawing-menu',drawingTask:'inspect',action:'hover'});
+      if(menu.navigationOutcome!=='observed')return{...account,status:'account-refresh-unconfirmed',navigationOutcome:'unconfirmed',workspace:workspace(),message:'账号已确认，但未能观察到图纸菜单；已停在设计页。'};
+      const drawing=await globalThis.__drawingReadFrontendIdentity({...options,navigationTask:'open-drawing-workspace',drawingTask:'inspect',action:'hover'});
+      for(let i=0;i<20&&!workspace().drawingOpen;i++)await new Promise(r=>setTimeout(r,100));
+      if((drawing.navigationOutcome!=='observed'&&!workspace().drawingOpen)||workspace().stage!==before.stage)return{...account,status:'account-refresh-unconfirmed',navigationOutcome:'unconfirmed',workspace:workspace(),message:'账号已确认，但未能核对返回原施工图工作区。'};
+      return{...account,status:'frontend-navigation-observed',navigationTask:options.navigationTask,navigationOutcome:'observed',workspace:workspace(),accountEvidence:{companyDisplayName:account.companyDisplayName,visibleAccountId:account.visibleAccountId,checkedAt:account.readAt,sameDocument:true,stale:false,scope:'navigation-only'}};
+    }
     if(options.navigationTask){
       const proof=globalThis.__drawingAccountDisplayProof;
       if(!proof||!Number.isFinite(proof.documentEpoch)||proof.url!==location.href||proof.documentEpoch!==globalThis.performance?.timeOrigin||proof.companyDisplayName!==clean(options.expectedCompanyName)||!Number.isFinite(proof.checkedAt)||proof.checkedAt>Date.now()||document.title!==options.expectedTitle)throw Error('Refresh and confirm the displayed account and current design before navigation');
@@ -232,3 +256,4 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
   record.confirmAttempted=true;record.phase='confirmation-click-attempted';record.startWatching?.();click(buttons[0]);result.executed=true;await wait(800);return outcome();
  }catch(e){return{...result,error:e.message,phase:record?.phase,dialogs:brief()};}
 };
+
