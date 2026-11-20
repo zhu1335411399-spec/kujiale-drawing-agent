@@ -1,60 +1,62 @@
-# ʩ��ͼ���� Agent
+# 施工图配置 Agent
 
-������Ŀ��kujiale-drawing-agent��ʩ��ͼ Skill��MCP���������չ��reference �Ͱ�װ�ű�ȫ�������ڱ��ֿ⣬����������������ģ�ֿ�Ŀ¼��
+独立项目：kujiale-drawing-agent。施工图 Skill、MCP、浏览器扩展、reference 和安装脚本全部集中在本仓库，不再依赖参数化建模仓库目录。
 
-## �����￪ʼ
+## 从这里开始
 
-- [���񡢹��ߡ�Skill �� Host �����ϵ](docs/architecture-and-entrypoints.md)
-- [Skill ���](.agents/skills/kujiale-drawing-bridge/SKILL.md)
-- [������������](.agents/skills/kujiale-drawing-bridge/references/workflow.md)
-- [ҳ����ӿڲο�](.agents/skills/kujiale-drawing-bridge/references/routes.md)
-- [����ע����ʽ����ɫ����](.agents/skills/kujiale-drawing-bridge/references/annotation-styles.md)
-- [ע����ʽʵ���̵�](docs/annotation-style-inspection.md)
-- [�������ԡ���ʾ��ʽ��ǰ������](skills/kujiale-drawing-bridge/references/object-config.md)
-- [��չ�˺ż���빤����״̬](docs/extension-panel.md)
-- [ע����ʽ�½����������ı��ֺű༭�뱣��](skills/kujiale-drawing-bridge/references/annotation-write.md)
-- [MCP ����˵��](mcp/DESIGN.md)
-- [����������](docs/pending-updates.md)
-- [Ǩ�Ƽ�¼](docs/migration.md)
+- [业务子 Skill、失败处理与 Host 接入](docs/business-skills-and-host.md)
 
-## Ŀ¼
+- [服务、工具、Skill 和 Host 接入关系](docs/architecture-and-entrypoints.md)
+- [Skill 入口](.agents/skills/kujiale-drawing-bridge/SKILL.md)
+- [完整验收流程](.agents/skills/kujiale-drawing-bridge/references/workflow.md)
+- [页面与接口参考](.agents/skills/kujiale-drawing-bridge/references/routes.md)
+- [四类注释样式与配色规则](.agents/skills/kujiale-drawing-bridge/references/annotation-styles.md)
+- [注释样式实际盘点](docs/annotation-style-inspection.md)
+- [对象属性、显示样式与前端验收](skills/kujiale-drawing-bridge/references/object-config.md)
+- [扩展账号检测与工作区状态](docs/extension-panel.md)
+- [注释样式新建、搜索、文本字号编辑与保存](skills/kujiale-drawing-bridge/references/annotation-write.md)
+- [MCP 工具说明](mcp/DESIGN.md)
+- [待更新内容](docs/pending-updates.md)
+- [迁移记录](docs/migration.md)
 
-| Ŀ¼/�ļ� | ���� |
+## 目录
+
+| 目录/文件 | 内容 |
 |---|---|
-| .agents/skills��.claude/skills | Codex / Claude ��Ӧ Skill ���� |
-| skills | ��װ��ʹ�õ�ͬһ�� Skill |
-| mcp | MCP ���񡢹��ߡ�Э�顢��ϺͲ��� |
-| browser-extension | �������չԴ�� |
-| docs��examples | ��Դ���������֤��¼�����ռƻ� |
-| installer | ��װ˵�� |
-| Start.cmd��start.ps1 | �������а���һ��������� |
-| install.ps1��build.ps1 | ��װ���������ɼ���� |
-| runtime/LICENSE | Node �ٷ�����֤�������Ʋ�����Դ��ֿ� |
+| .agents/skills、.claude/skills | Codex / Claude 对应 Skill 镜像 |
+| skills | 安装包使用的同一份 Skill |
+| mcp | MCP 服务、工具、协议、诊断和测试 |
+| browser-extension | 浏览器扩展源码 |
+| docs、examples | 来源、变更、验证记录和验收计划 |
+| installer | 安装说明 |
+| Start.cmd、start.ps1 | 完整运行包的一键启动入口 |
+| install.ps1、build.ps1 | 安装、配置生成及打包 |
+| runtime/LICENSE | Node 官方许可证；二进制不进入源码仓库 |
 
-## �汾��ʹ�ñ߽�
+## 版本与使用边界
 
-��ǰ���ᷢ�л���Ϊ 0.5.0��Դ��������������������ԭ���а�����ǩ��У���ļ������ֲ����·�����װ����
+当前冻结发行基线为 0.5.0，源码能力继续开发；保留原发行包、标签和校验文件，本轮不重新发布安装包。
 
-��ʷ���������� [ԭ�ֿ� 0.5.0 ����ҳ](https://github.com/zhu1335411399-spec/kujiale-model-agent/releases/tag/drawing-v0.5.0)���ȶ����ֿ⽨������֤��ɺ���Ǩ�Ʒ��и��������ܰ�Դ�� ZIP ������ Node �����а���
+历史完整包仍在 [原仓库 0.5.0 发行页](https://github.com/zhu1335411399-spec/kujiale-model-agent/releases/tag/drawing-v0.5.0)。等独立仓库建立并验证完成后，再迁移发行附件；不能把源码 ZIP 当作含 Node 的运行包。
 
-��ǰԴ�����ҳ���ȡ���ͻ����롢ǰ��ͷ��˶ԡ��½�����ʽ�ݸ壬�Լ�����ʽ����������ָ����¼�༭���ִ���档�������̼�ʵ������״̬�� [��������](skills/kujiale-drawing-bridge/references/capabilities.md) �� [����ʽ�����༭](skills/kujiale-drawing-bridge/references/line-style-edit.md)��ͨ�� drawing_save_config / drawing_publish_config ��Ϊδִ����ڣ�����ʽ��ִ���治��������������֧�֡�ǰ����ҵģ���顢�������ü���ǰƽ�沼��ͼ�Ĺ�������Ч����ʵ����֤���Զ���ע������Ϊ����ͼ����ʷ�汾�ָ���δ�Զ���ͨ��
+当前源码包含页面读取、客户载入、前端头像核对、新建线样式草稿，以及线样式名称搜索、指定记录编辑与回执保存。操作流程及实际验收状态见 [能力分组](skills/kujiale-drawing-bridge/references/capabilities.md) 和 [线样式搜索编辑](skills/kujiale-drawing-bridge/references/line-style-edit.md)。通用 drawing_save_config / drawing_publish_config 仍为未执行入口；线样式回执保存不代表其他分类已支持。前端企业模板检查、更新配置及当前平面布置图的柜体轮廓效果已实际验证；自动标注、另存为、出图及历史版本恢复尚未自动接通。
 
-ע����ʽҲ�ṩͬһ�����µ�ר�ù��ߣ������½��������������ı��ֺ��޸ĺͻ�ִ�����������ʵҳ�����������ˢ�¡�����ԭ�ͻ���ԭ ID ���ֶλض��������淶�ֶΡ�������������ǰ��Ӧ����δ���գ�����Ϸ�ע��д�����̡��˴θ��²������°�װ����
+注释样式也提供同一服务下的专用工具：四类新建、名称搜索、文本字号修改和回执保存已完成真实页面操作，并在刷新、重载原客户后按原 ID 和字段回读。其他规范字段、独立重命名及前端应用尚未验收，详见上方注释写入流程。此次更新不发布新安装包。
 
-Դ������/����� Node.js 20+���������а��Դ� Node���״�ʹ�������û�������չ������ AI �ͻ�����Ŀ������¼�Լ����˺š����а������� AI �����������˺š�
+源码运行/打包需 Node.js 20+。完整运行包自带 Node；首次使用仍需用户加载扩展、信任 AI 客户端项目，并登录自己的账号。运行包不内置 AI 聊天软件或账号。
 
-������������ר�ù��ߣ�����/������ȡ�������Ա༭������ʽ�����滻�ͻ�ִ���档ǽ���������Զ�����ǳ���������滻������ʵҳ����ɱ��桢ˢ�¼�ͬ ID �ض������Ƴ���ǳ�������������ǰ����ҵģ��˶ԡ��������á�������ռ��ָ���ҵĵ�ǰ��ͼ���ա�����������òο���������һ�������֤�������з�����ֶΡ�
+对象配置新增专用工具：大类/真分类读取、三属性编辑、线样式引用替换和回执保存。墙的三属性自定义与浅底造型线替换已在真实页面完成保存、刷新及同 ID 回读；定制厨柜浅底轮廓线已完成前端企业模板核对、更新配置、亮红对照及恢复深灰的当前视图验收。详见对象配置参考，不将单一对象的验证扩大到所有分类和字段。
 
-��չ�˺ż��ʹ�ù�����̨�������ͬһ�ĵ��Զ���ȡһ�Σ��ظ�����ϲ���ʧ�ܺͳ�ʱ��ѭ�����ԣ�ˢ��״̬��ǿ����ͣ����ť��ȷ���¡���ͨ��ƶ˿ɼ���˺ţ�ʩ��ͼ��״̬��Ч�����ն�����ʾ���״μ��ش˰汾���ڶ�Ӧ��������¼�����չһ�Σ�Ȩ�ޱ��ֲ��䣬�������°�װ����
+扩展账号检测使用共享后台检测器：同一文档自动读取一次，重复请求合并、失败和超时不循环重试；刷新状态不强制悬停，按钮明确更新。普通设计端可检测账号，施工图打开状态和效果验收独立显示。首次加载此版本需在对应浏览器重新加载扩展一次，权限保持不变，不发布新安装包。
 
-## �������
+## 开发检查
 
 ```powershell
 node --test mcp/line-style-runtime.test.mjs mcp/line-style-actions.test.mjs mcp/trusted-line-input.test.mjs mcp/http-server.test.mjs
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-�޸�ҳ�����Դ������� `node scripts/build-config-page-runtime.mjs` ������չ����ҳ�����ļ����޸Ĺ����߳����õ�ģ�����ʵ��ʹ�õ���������¼�����չ�����в��Ի����������������ʵ��ҳ������
+修改页面操作源码后运行 `node scripts/build-config-page-runtime.mjs` 生成扩展配置页适配文件；修改工作线程引用的模块后，在实际使用的浏览器重新加载扩展。运行测试或打包不代表已完成真实网页操作。
 
-GitHub �����������ֶ��������������޸Ĳο����ϲ����Զ������°���
+GitHub 工作流保持手动触发，整理或修改参考资料不会自动发布新包。
 

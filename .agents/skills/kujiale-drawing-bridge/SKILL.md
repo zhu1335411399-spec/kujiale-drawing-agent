@@ -77,3 +77,15 @@ description: 酷家乐施工图配置 Agent。用于区分企业账号自配置�
 当前 HTTP 源码入口见 references/connection-http.md；它与旧桌面管理器的原生消息链路不同。分别核验页面访问、本机桥接和 Agent 实际 MCP 调用；每个独立浏览器用户配置加载同一扩展，并分别核对账号。
 
 
+
+## 业务子 Skill 路由
+
+按任务只读取对应入口；共享参考保持在主 Skill，子入口不复制全部资料。
+
+- [客户与配置定位](../drawing-config-target/SKILL.md)
+- [线样式维护](../drawing-line-style-workflow/SKILL.md)
+- [注释样式维护](../drawing-annotation-workflow/SKILL.md)
+- [对象配置与还原](../drawing-object-workflow/SKILL.md)
+- [前端同步与效果验收](../drawing-frontend-validation/SKILL.md)
+
+新增多步骤、分支、跨模块依赖、还原或验收能力时，主动提醒是否纳入现有业务 Skill 或新增入口；不将全部业务规则堆到 MCP 描述中。优先直接调用 Host 已暴露的工具，未暴露时明确本机 MCP 客户端调用方式。
