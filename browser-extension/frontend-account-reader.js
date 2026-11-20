@@ -61,4 +61,3 @@ export function createFrontendAccountReader({api=chrome,browser=()=>navigator.us
  listen(api.tabs.onUpdated,(id,c)=>{if('url'in c||c.status==='loading'||c.discarded)invalidate(id);});
  return{read,invalidate,dispose(){for(const remove of disposers)remove();for(const ticket of pending.values())ticket.expired=true;pending.clear();memory.clear();}};
 }
-
