@@ -256,4 +256,3 @@ globalThis.__drawingSyncFrontendConfig=async function(o){
   record.confirmAttempted=true;record.phase='confirmation-click-attempted';record.startWatching?.();click(buttons[0]);result.executed=true;await wait(800);return outcome();
  }catch(e){return{...result,error:e.message,phase:record?.phase,dialogs:brief()};}
 };
-
