@@ -138,6 +138,7 @@ export async function perform(task) {
   if(task.operation==='frontend-account'){
     const args=task.args;if(browserProfileScope().browser!==args.expectedBrowser)throw Error('Connected browser family does not match');
     const value=await frontendAccountReader().read(args.tabId,{force:args.refresh===true});
+    if(value.refreshRequired)return{...value,identityVerified:false};
     if(value.companyDisplayName){const match=value.companyDisplayName.trim().replace(/\s+/g,' ')===args.expectedCompanyName.trim().replace(/\s+/g,' ');return{...value,status:match?'display-name-match':'display-name-mismatch',displayNameMatch:match,identityVerified:false};}
     return value;
   }

@@ -33,6 +33,13 @@ export function createFrontendAccountReader({api=chrome,browser=()=>navigator.us
   const token=tabId+':'+state.documentEpoch,existing=pending.get(token);if(existing)return existing.reply;
   let cached=memory.get(tabId);if(!cached){cached=(await api.storage.session.get(key(tabId)))[key(tabId)];}
   if(pending.has(token))return pending.get(token).reply;
+  // The drawing workspace hides the account avatar. A forced refresh here cannot
+  // produce fresh evidence, and must not replace a successful same-document read.
+  if(force&&state.workspace.drawingOpen){
+   const previous=cached?.documentEpoch===state.documentEpoch&&cached.url===state.url&&cached.value?.companyDisplayName?cached:null;
+   if(previous){memory.set(tabId,previous);return{...previous.value,status:'identity-refresh-required',workspace:state.workspace,cached:true,stale:true,refreshRequired:true,reason:'drawing-avatar-hidden',message:'施工图工作区隐藏账号头像；请返回同一设计页刷新账号，再进入施工图。'};}
+   return unavailable('drawing-avatar-hidden','施工图工作区隐藏账号头像；请返回同一设计页刷新账号，再进入施工图。',{workspace:state.workspace,refreshRequired:true,stale:true});
+  }
   if(cached&&cached.documentEpoch===state.documentEpoch&&cached.url===state.url&&!force){memory.set(tabId,cached);return{...cached.value,workspace:state.workspace,cached:true,stale:now()-cached.checkedAt>=cacheFreshMs};}
   const version=versions.get(tabId)||0,ticket={expired:false},valid=()=>!ticket.expired&&(versions.get(tabId)||0)===version;
   const work=(async()=>{
