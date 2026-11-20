@@ -285,4 +285,3 @@ chrome.alarms.onAlarm.addListener(alarm => { if (alarm.name === alarmName) void 
 chrome.runtime.onStartup.addListener(() => { void pollBridge(); });
 chrome.runtime.onInstalled.addListener(() => { void pollBridge(); });
 
-
