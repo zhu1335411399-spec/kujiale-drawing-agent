@@ -46,4 +46,3 @@ test('drawing refresh with no same-document identity does not invent or cache an
  assert.equal(f.saved['frontendAccountV2:7'],undefined);f.reader.dispose();
 });
 
-
