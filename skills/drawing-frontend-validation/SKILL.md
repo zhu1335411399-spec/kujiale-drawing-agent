@@ -7,7 +7,7 @@ description: 后台保存后在客户设计端核对账号企业模板、更新�
 
 先遵守 [主流程](../kujiale-drawing-bridge/SKILL.md) 的账号、目标、保存和发布规则。子 Skill 是任务入口，不是新 MCP 服务。
 
-1. 取得后台已保存回读证据；绑定前端浏览器、pageId、方案标题与客户显示名称。普通设计页使用 drawing_read_frontend_account，业务开始需要时 refresh=true，不循环悬停。施工图工作区隐藏头像时，显式调用 drawing_frontend_navigation(action=refresh-account-in-drawing)：确认无弹窗后退出、读取设计页头像名称及可见 ID、返回原工作区；名称不符或状态不确定时停止并报告当前位置。只读账号工具返回 identity-refresh-required 时，保留的名称是历史证据，不能作为本轮新核验。
+1. 取得后台已保存回读证据；绑定前端浏览器、pageId、方案标题与客户显示名称。使用 drawing_read_frontend_account，业务开始需要时 refresh=true，不循环悬停。
 2. 使用 drawing_sync_frontend_configuration 的 inspect 核对当前企业模板与更新时间。行业模板不能用于客户个性化验收；模板不明或归属歧义时停止写入。
 3. 同一 requestId 执行 update，必要时 confirm，之后 verify。全部重新生成必须明确未勾选；遇到覆盖手工标注等额外范围时不自行确认。成功需本任务新出现的明确成功提示。
 4. 已提交结果不明只 verify，不重新 update/confirm。断线恢复先读取当前文档与任务状态，不重复后台编辑或已完成保存。
